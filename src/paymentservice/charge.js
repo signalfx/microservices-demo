@@ -152,11 +152,6 @@ module.exports = function charge(request) {
           error: true,
         });
 
-        // Mark failure from peer service
-        externalPaymentProcessorClientSpan.setAttributes({
-          error: true,
-        });
-
         // Log out error about token
         logger.error(
           {
