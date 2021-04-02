@@ -24,14 +24,18 @@ import (
 
 	"cloud.google.com/go/profiler"
 	"github.com/google/uuid"
-	"github.com/signalfx/splunk-otel-go/distro"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	pb "github.com/signalfx/microservices-demo/src/checkoutservice/genproto"
 	money "github.com/signalfx/microservices-demo/src/checkoutservice/money"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -116,6 +120,7 @@ func main() {
 	logger.Fatal(err)
 }
 
+/*
 func initTracing() func() {
 	sdk, err := distro.Run(distro.WithServiceName("checkoutservice"))
 	if err != nil {
@@ -129,6 +134,46 @@ func initTracing() func() {
 		}
 	}
 }
+*/
+
+func initTracing() func() {
+	endpoint := os.Getenv("OTEL_EXPORTER_JAEGER_ENDPOINT")
+	if endpoint == "" { endpoint = "localhost:14268/api/traces" }
+
+	exp, err := jaeger.NewRawExporter(
+				jaeger.WithCollectorEndpoint(endpoint),
+				)
+
+	if err != nil {
+		fmt.Errorf("%s: %v", "failed to create exporter", err)
+		os.Exit(1)
+	}
+	ctx := context.Background()
+	res, _ := resource.New(ctx)
+
+	traceProvider := sdktrace.NewTracerProvider(
+					sdktrace.WithSampler(sdktrace.AlwaysSample()),
+					sdktrace.WithResource(res),
+					sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
+					)
+	otel.SetTracerProvider(traceProvider)
+	otel.SetTextMapPropagator(b3.B3{})
+
+	logger.Info("otel initialization completed.")
+	return func() {
+		err := traceProvider.Shutdown(ctx)
+		if err != nil {
+			fmt.Errorf("%s: %v", "failed to shutdown provider", err)
+			os.Exit(1)
+		}
+		err = exp.Shutdown(ctx)
+		if err != nil {
+			fmt.Errorf("%s: %v", "failed to stop exporter", err)
+			os.Exit(1)
+		}
+	}
+}
+
 
 func initProfiling(service, version string) {
 	// TODO(ahmetb) this method is duplicated in other microservices using Go

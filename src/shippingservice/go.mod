@@ -10,6 +10,10 @@ require (
 	github.com/signalfx/splunk-otel-go v0.0.0-20210331191121-59c68c77a30c
 	github.com/sirupsen/logrus v1.4.2
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.19.0
+	go.opentelemetry.io/contrib/propagators v0.19.0
+	go.opentelemetry.io/otel v0.19.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.19.0
+	go.opentelemetry.io/otel/sdk v0.19.0
 	go.opentelemetry.io/otel/trace v0.19.0
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	google.golang.org/grpc v1.36.0
