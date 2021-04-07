@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"time"
+	"encoding/json"
+	"math/rand"
 
 	"cloud.google.com/go/profiler"
 	"github.com/google/uuid"
@@ -33,6 +34,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/metadata"
 
 	pb "github.com/signalfx/microservices-demo/src/checkoutservice/genproto"
 	money "github.com/signalfx/microservices-demo/src/checkoutservice/money"
@@ -68,6 +70,7 @@ type checkoutService struct {
 	shippingSvcAddr       string
 	emailSvcAddr          string
 	paymentSvcAddr        string
+	paymentSvcStableAddr  string
 }
 
 func main() {
@@ -98,6 +101,7 @@ func main() {
 	mustMapEnv(&svc.currencySvcAddr, "CURRENCY_SERVICE_ADDR")
 	mustMapEnv(&svc.emailSvcAddr, "EMAIL_SERVICE_ADDR")
 	mustMapEnv(&svc.paymentSvcAddr, "PAYMENT_SERVICE_ADDR")
+	mustMapEnv(&svc.paymentSvcStableAddr, "PAYMENT_SERVICE_ADDR_STABLE")
 
 	logger.Infof("service config: %+v", svc)
 
@@ -168,9 +172,31 @@ func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.H
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+type CheckoutServiceBehavior struct {
+	PaymentFailureRate      float32 `json:"paymentFailureRate"`
+	MaxRetryAttempts        int   `json:"maxRetryAttempts"`
+	RetryInitialSleepMillis int   `json:"retryInitialSleepMillis"`
+}
+
+type SystemBehavior struct {
+	CheckoutService CheckoutServiceBehavior `json:"checkoutService"`
+}
+
+
 func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
 	log := logger.WithFields(getTraceLogFields(ctx))
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.DataLoss, "failed to get metadata")
+	}
+
+	log.Info("******************************************************")
+	behaviorJson := md["x-system-behavior"];
+	log.Info(behaviorJson[0])
+	var behavior SystemBehavior
+	json.Unmarshal([]byte(behaviorJson[0]), &behavior)
 
 	orderID, err := uuid.NewUUID()
 	if err != nil {
@@ -190,7 +216,7 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		total = money.Must(money.Sum(total, *it.Cost))
 	}
 
-	txID, err := cs.chargeCard(ctx, &total, req.CreditCard)
+	txID, err := cs.chargeCard(ctx, &total, req.CreditCard, &behavior)
 	if err != nil {
 		logger.Errorf("failed to charge card: %+v", err)
 		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
@@ -357,14 +383,29 @@ func chargeCardRetry(attempts int, sleep time.Duration, f func() (string, error)
 	return res, nil
 }
 
-func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
-	conn, err := grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure(), grpc.WithStatsHandler(clientStatsHandler()))
+func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo, behavior *SystemBehavior) (string, error) {
+
+	// Connection to broken payment service
+	connBroken, err := grpc.DialContext(ctx, cs.paymentSvcAddr, grpc.WithInsecure(), grpc.WithStatsHandler(clientStatsHandler()))	
 	if err != nil {
 		return "", fmt.Errorf("failed to connect payment service: %+v", err)
 	}
-	defer conn.Close()
+	defer connBroken.Close()
+
+	// Connection to fixed payment service
+	connFixed, err := grpc.DialContext(ctx, cs.paymentSvcStableAddr, grpc.WithInsecure(), grpc.WithStatsHandler(clientStatsHandler()))	
+	if err != nil {
+		return "", fmt.Errorf("failed to connect stable payment service: %+v", err)
+	}
+	defer connFixed.Close()
 
 	chargeRequest := func() (string, error) {
+		// Determine which connection to use for this request
+	  conn := connFixed
+		if rand.Float32() < behavior.CheckoutService.PaymentFailureRate {
+			conn = connBroken
+		}
+
 		paymentResp, err := pb.NewPaymentServiceClient(conn).Charge(ctx, &pb.ChargeRequest{
 			Amount:     amount,
 			CreditCard: paymentInfo})
@@ -374,8 +415,8 @@ func (cs *checkoutService) chargeCard(ctx context.Context, amount *pb.Money, pay
 		return paymentResp.GetTransactionId(), nil
 	}
 
-	attempts, _ := strconv.Atoi(os.Getenv("MAX_RETRY_ATTEMPTS"))
-	initialSleepMillis, _ := strconv.Atoi(os.Getenv("RETRY_INITIAL_SLEEP_MILLIS"))
+	attempts := behavior.CheckoutService.MaxRetryAttempts
+	initialSleepMillis := behavior.CheckoutService.RetryInitialSleepMillis
 	initialSleep := time.Duration(initialSleepMillis * 1000 * 1000) // millis to nanos
 	return chargeCardRetry(attempts, initialSleep, chargeRequest)
 }

@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/gorilla/mux"
 	"github.com/opentracing/opentracing-go"
@@ -31,6 +32,7 @@ import (
 	"github.com/signalfx/signalfx-go-tracing/ddtrace/tracer"
 	"github.com/sirupsen/logrus"
 
+	"google.golang.org/grpc/metadata"
 	pb "github.com/signalfx/microservices-demo/src/frontend/genproto"
 	"github.com/signalfx/microservices-demo/src/frontend/money"
 )
@@ -47,6 +49,61 @@ var (
 		}).ParseGlob("templates/*.html"))
 	plat platformDetails
 )
+
+type CheckoutServiceBehavior struct {
+	PaymentFailureRate      float32 `json:"paymentFailureRate"`
+	MaxRetryAttempts        int     `json:"maxRetryAttempts"`
+	RetryInitialSleepMillis int     `json:"retryInitialSleepMillis"`
+}
+
+type SystemBehavior struct {
+	CheckoutService CheckoutServiceBehavior `json:"checkoutService"`
+}
+
+// System behavior. Propagated downstream through x-system-behavior request headers as json.
+var behavior = &SystemBehavior{
+	CheckoutService: CheckoutServiceBehavior{
+		PaymentFailureRate: 1.0,
+		MaxRetryAttempts: 20,
+		RetryInitialSleepMillis: 200,
+	},
+}
+
+func (fe *frontendServer) getSystemBehaviorHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+	behavior_marshalled, err := json.Marshal(behavior)
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "could not serialize behavior"), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	fmt.Fprint(w, string(behavior_marshalled))
+}
+
+func (fe *frontendServer) patchSystemBehaviorHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+
+	// Merge the request body with the previous behavior state
+	PatchState := new(SystemBehavior);
+	*PatchState = *behavior;
+	err := json.NewDecoder(r.Body).Decode(&PatchState)
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "could not serialize behavior"), http.StatusInternalServerError)
+		return
+	}
+
+	// Set the new patched state as our system behavior
+	*behavior = *PatchState
+
+	// Return newly patched state
+	behavior_marshalled, err := json.Marshal(PatchState)
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "could not serialize behavior"), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	fmt.Fprint(w, string(behavior_marshalled))
+}
 
 func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
@@ -305,7 +362,13 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Request) {
-	log := getLoggerWithTraceFields(r.Context())
+
+	// Add system behavior as header context
+	behavior_marshalled, err := json.Marshal(behavior)
+	md := metadata.New(map[string]string{"x-system-behavior": string(behavior_marshalled)})
+	ctx := metadata.NewOutgoingContext(r.Context(), md)
+
+	log := getLoggerWithTraceFields(ctx)
 	log.Debug("placing order")
 
 	var (
@@ -322,7 +385,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 	)
 
 	order, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		PlaceOrder(r.Context(), &pb.PlaceOrderRequest{
+		PlaceOrder(ctx, &pb.PlaceOrderRequest{
 			Email: email,
 			CreditCard: &pb.CreditCardInfo{
 				CreditCardNumber:          ccNumber,
@@ -345,14 +408,14 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 	log.WithField("order", order.GetOrder().GetOrderId()).Info("order placed")
 
 	order.GetOrder().GetItems()
-	recommendations, _ := fe.getRecommendations(r.Context(), sessionID(r), nil)
+	recommendations, _ := fe.getRecommendations(ctx, sessionID(r), nil)
 
 	totalPaid := *order.GetOrder().GetShippingCost()
 	for _, v := range order.GetOrder().GetItems() {
 		totalPaid = money.Must(money.Sum(totalPaid, *v.GetCost()))
 	}
 
-	currencies, err := fe.getCurrencies(r.Context())
+	currencies, err := fe.getCurrencies(ctx)
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "could not retrieve currencies"), http.StatusInternalServerError)
 		return
@@ -360,7 +423,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 
 	if err := templates.ExecuteTemplate(w, "order", map[string]interface{}{
 		"session_id":      sessionID(r),
-		"request_id":      r.Context().Value(ctxKeyRequestID{}),
+		"request_id":      ctx.Value(ctxKeyRequestID{}),
 		"user_currency":   currentCurrency(r),
 		"currencies":      currencies,
 		"order":           order.GetOrder(),

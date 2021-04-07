@@ -62,10 +62,6 @@ spec:
           - name: SIGNALFX_ENDPOINT_URL 
             # value: "http://zipkin.default:9411/api/v2/spans"
             value: "http://$(NODE_IP):9411/api/v2/spans"
-          - name: MAX_RETRY_ATTEMPTS
-            value: "20"
-          - name: RETRY_INITIAL_SLEEP_MILLIS
-            value: "25"
           resources:
             requests:
               cpu: 100m
