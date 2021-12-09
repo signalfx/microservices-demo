@@ -26,3 +26,8 @@ From `src/adservice/`, run:
 docker build ./
 ```
 
+# Bottleneck support
+
+If you'd like to introduce a bottleneck, define `ENABLE_COPYRIGHT_CERTIFICATION=true` in the 
+environment.
+

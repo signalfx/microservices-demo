@@ -7,6 +7,7 @@ import java.util.Map;
 public class CopyrightCertification {
 
     private final Map<String, Certifier> certifiers = new HashMap<>();
+    private final boolean enabled = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_COPYRIGHT_CERTIFICATION", "false"));
 
     {
         certifiers.put("vintage", new BasicCertifier());
@@ -17,9 +18,10 @@ public class CopyrightCertification {
     }
 
     public List<hipstershop.Demo.Ad> certify(String category, List<hipstershop.Demo.Ad> ads) {
+        if(!enabled){
+            return ads;
+        }
         Certifier certifier = certifiers.get(category);
         return certifier.certify(ads);
     }
-
-
 }
