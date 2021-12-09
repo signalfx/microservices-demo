@@ -22,5 +22,8 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.3.1 && \
 WORKDIR /app
 COPY --from=builder /app .
 
+# Allow bottlenecks via copyright certification
+ENV ENABLE_COPYRIGHT_CERTIFICATION=true
+
 EXPOSE 9555
 ENTRYPOINT ["/app/build/install/hipstershop/bin/AdService"]
