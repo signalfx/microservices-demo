@@ -17,26 +17,26 @@
 package hipstershop;
 
 import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import hipstershop.Demo.Ad;
 import hipstershop.Demo.AdRequest;
 import hipstershop.Demo.AdResponse;
+import hipstershop.copyright.CopyrightCertification;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
-import io.grpc.services.*;
+import io.grpc.services.HealthStatusManager;
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public final class AdService {
 
@@ -49,6 +49,7 @@ public final class AdService {
   private HealthStatusManager healthMgr;
 
   private static final AdService service = new AdService();
+  private final CopyrightCertification copyrightCertification = new CopyrightCertification();
 
   private void start() throws IOException {
     int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "9555"));
@@ -135,7 +136,8 @@ public final class AdService {
   private static final ImmutableListMultimap<String, Ad> adsMap = createAdsMap();
 
   private Collection<Ad> getAdsByCategory(String category) {
-    return adsMap.get(category);
+    List<Ad> ads = adsMap.get(category);
+    return copyrightCertification.certify(category, ads);
   }
 
   private static final Random random = new Random();
