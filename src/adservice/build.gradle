@@ -3,6 +3,7 @@ plugins {
     id 'com.github.sherter.google-java-format' version '0.8'
     id 'idea'
     id 'application'
+    id 'com.ryandens.javaagent-application' version "0.2.1"
 }
 
 repositories {
@@ -43,6 +44,8 @@ dependencies {
         runtimeOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                 "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
                 "io.netty:netty-tcnative-boringssl-static:2.0.43.Final"
+
+        javaagent "com.splunk:splunk-otel-javaagent:1.6.0:all"
     }
 }
 
@@ -78,7 +81,14 @@ sourceSets {
     }
 }
 
-startScripts.enabled = false
+application {
+    mainClassName = 'hipstershop.AdService'
+    applicationName = 'AdService'
+    applicationDefaultJvmArgs = [
+        "-Dsplunk.profiler.enabled=true",
+        "-Dsplunk.profiler.period.threaddump=1000"
+    ]
+}
 
 // This to cache dependencies during Docker image building. First build will take time.
 // Subsequent build will be incremental.
@@ -89,13 +99,6 @@ task downloadRepos(type: Copy) {
     into offlineCompile
 }
 
-task adService(type: CreateStartScripts) {
-    mainClassName = 'hipstershop.AdService'
-    applicationName = 'AdService'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
 task adServiceClient(type: CreateStartScripts) {
     mainClassName = 'hipstershop.AdServiceClient'
     applicationName = 'AdServiceClient'
@@ -104,7 +107,7 @@ task adServiceClient(type: CreateStartScripts) {
 }
 
 applicationDistribution.into('bin') {
-    from(adService)
+//    from(adService)
     from(adServiceClient)
     fileMode = 0755
 }
