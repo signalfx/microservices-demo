@@ -26,4 +26,4 @@ COPY --from=builder /app .
 ENV ENABLE_COPYRIGHT_CERTIFICATION=true
 
 EXPOSE 9555
-ENTRYPOINT ["/app/build/install/hipstershop/bin/AdService"]
+ENTRYPOINT ["/app/build/install/AdService/bin/AdService"]
