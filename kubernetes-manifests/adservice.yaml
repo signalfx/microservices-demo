@@ -44,18 +44,16 @@ spec:
           env:
             - name: PORT
               value: '9555'
-            - name: OTEL_EXPORTER_ZIPKIN_SERVICE_NAME
+            - name: OTEL_SERVICE_NAME
               value: adservice
             - name: NODE_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: OTEL_EXPORTER
-              value: zipkin
-            - name: JAVA_TOOL_OPTIONS
-              value: -javaagent:/opt/sfx/splunk-otel-javaagent-all.jar
-            - name: OTEL_EXPORTER_ZIPKIN_ENDPOINT
-              value: 'http://$(NODE_IP):9411/v1/trace'
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(NODE_IP):4317
           volumeMounts:
             - mountPath: /opt/sfx
               name: sfx-instrumentation
