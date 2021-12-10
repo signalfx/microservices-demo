@@ -107,7 +107,6 @@ task adServiceClient(type: CreateStartScripts) {
 }
 
 applicationDistribution.into('bin') {
-//    from(adService)
     from(adServiceClient)
     fileMode = 0755
 }
