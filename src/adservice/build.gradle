@@ -85,6 +85,7 @@ application {
     mainClassName = 'hipstershop.AdService'
     applicationName = 'AdService'
     applicationDefaultJvmArgs = [
+        "-Dotel.service.name=adservice",
         "-Dsplunk.profiler.enabled=true",
         "-Dsplunk.profiler.period.threaddump=1000"
     ]
