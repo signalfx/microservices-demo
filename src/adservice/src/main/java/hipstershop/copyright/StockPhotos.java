@@ -22,7 +22,7 @@ public class StockPhotos {
 
     private static List<CopyrightPhoto> createDatabase() {
         List<CopyrightPhoto> result = new LinkedList<>();
-        for(int i=0; i < 20000; i++){
+        for(int i=0; i < 5000; i++){
             result.add(new CopyrightPhoto("photo" + i));
         }
         return result;
