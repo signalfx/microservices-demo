@@ -138,6 +138,9 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "User-agent: *\nDisallow: /") })
 	r.HandleFunc("/_healthz", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "ok") })
+	r.HandleFunc("/generateFakeAPI", svc.generateFakeAPIHandler).Methods(http.MethodPost)
+	r.HandleFunc("/generateSalesTax", svc.generateSalesTaxHandler).Methods(http.MethodGet)
+	r.HandleFunc("/generateSlowResponse", svc.generateSlowResponseHandler).Methods(http.MethodGet)
 
 	var handler http.Handler = r
 	handler = &logHandler{log: log, next: handler} // add logging
@@ -191,7 +194,7 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	var err error
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
-		grpc.WithTimeout(time.Second*3),
+		grpc.WithTimeout(time.Second*1000),
 		grpc.WithStatsHandler(grpctrace.NewClientStatsHandler(grpctrace.WithServiceName("frontend"))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))

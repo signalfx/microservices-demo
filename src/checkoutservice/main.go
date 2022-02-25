@@ -46,6 +46,7 @@ const (
 )
 
 var logger *logrus.Logger
+var country = "france"
 
 func init() {
 	logger = logrus.New()
@@ -166,6 +167,34 @@ func (cs *checkoutService) Check(ctx context.Context, req *healthpb.HealthCheckR
 
 func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
+}
+
+func (cs *checkoutService) GenerateFakeAPI(ctx context.Context, req *pb.GenerateFakeAPIRequest) (*pb.Empty, error) {
+	doSomeProcessing()
+	return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
+}
+
+func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.GenerateSalesTaxRequest) (*pb.Empty, error) {
+	doSomeProcessing()
+	if req.Country == country {
+		return nil, status.Errorf(codes.Internal, "Something went wrong with this request!")
+	} else {
+		return new(pb.Empty), nil
+	}
+}
+
+func (cs *checkoutService) GenerateSlowResponse(ctx context.Context, req *pb.GenerateSlowResponseRequest) (*pb.Empty, error) {
+	doSomeProcessing()
+	i64 := int64(req.Delay)
+	var d time.Duration = time.Duration(i64)
+
+	if i64 > 0 {
+		time.Sleep(d * time.Second)
+	} else {
+		time.Sleep(5 * time.Second)
+	}
+
+	return new(pb.Empty), nil
 }
 
 func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
@@ -418,4 +447,11 @@ func getTraceLogFields(ctx context.Context) logrus.Fields {
 		fields["service.name"] = "checkoutservice"
 	}
 	return fields
+}
+
+func doSomeProcessing() {
+	for i := 0; i < 500; i++ {
+		j := i
+		j = i + j
+	}
 }

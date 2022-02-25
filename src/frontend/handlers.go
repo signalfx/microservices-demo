@@ -304,26 +304,6 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (fe *frontendServer) testHandler(w http.ResponseWriter, r *http.Request) {
-	log := getLoggerWithTraceFields(r.Context())
-	log.Debug("test handler API is called")
-	fmt.Println("this test handler is got called")
-
-	resp, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		Test(r.Context(), &pb.TestRequest{
-			Request: "sonu jain",
-		})
-	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "error occured in test API"), http.StatusInternalServerError)
-		return
-	}
-	// log.WithField("order", order.GetOrder().GetOrderId()).Info("order placed")
-
-	// http.Error(w, "sent 400 error for testing", http.StatusBadRequest)
-	// return
-	fmt.Fprint(w, "test run success:", resp)
-}
-
 func (fe *frontendServer) generateFakeAPIHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
 	log.Debug("generating 500 response with generateFakeAPI call")
