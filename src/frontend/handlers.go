@@ -304,6 +304,87 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func (fe *frontendServer) testHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+	log.Debug("test handler API is called")
+	fmt.Println("this test handler is got called")
+
+	resp, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
+		Test(r.Context(), &pb.TestRequest{
+			Request: "sonu jain",
+		})
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "error occured in test API"), http.StatusInternalServerError)
+		return
+	}
+	// log.WithField("order", order.GetOrder().GetOrderId()).Info("order placed")
+
+	// http.Error(w, "sent 400 error for testing", http.StatusBadRequest)
+	// return
+	fmt.Fprint(w, "test run success:", resp)
+}
+
+func (fe *frontendServer) generateFakeAPIHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+	log.Debug("generating 500 response with generateFakeAPI call")
+
+	quantity, _ := strconv.ParseInt(r.FormValue("quantity"), 10, 32)
+	productID := r.FormValue("product_id")
+
+	if productID == "" || quantity <= 0 {
+		renderHTTPError(log, r, w, errors.New("invalid form input"), http.StatusBadRequest)
+		return
+	}
+
+	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
+		GenerateFakeAPI(r.Context(), &pb.GenerateFakeAPIRequest{
+			ProductId: productID,
+			Quantity:  int32(quantity),
+		})
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+	log.Debug("generating 408 response with generateSalesTax API call for france")
+
+	country := r.URL.Query().Get("country")
+
+	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
+		GenerateSalesTax(r.Context(), &pb.GenerateSalesTaxRequest{
+			Country: country,
+		})
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusRequestTimeout)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (fe *frontendServer) generateSlowResponseHandler(w http.ResponseWriter, r *http.Request) {
+	log := getLoggerWithTraceFields(r.Context())
+	log.Debug("generating slow response with ggenerateSlowResponse API call")
+
+	u64, _ := strconv.ParseUint(r.URL.Query().Get("delay"), 10, 32)
+
+	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
+		GenerateSlowResponse(r.Context(), &pb.GenerateSlowResponseRequest{
+			Delay: uint32(u64),
+		})
+	if err != nil {
+		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
 	log.Debug("placing order")
