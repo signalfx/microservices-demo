@@ -194,7 +194,7 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	var err error
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
-		grpc.WithTimeout(time.Second*1000),
+		grpc.WithTimeout(time.Second*3),
 		grpc.WithStatsHandler(grpctrace.NewClientStatsHandler(grpctrace.WithServiceName("frontend"))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))

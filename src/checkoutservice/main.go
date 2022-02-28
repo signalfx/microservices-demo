@@ -46,7 +46,6 @@ const (
 )
 
 var logger *logrus.Logger
-var country = "france"
 
 func init() {
 	logger = logrus.New()
@@ -176,6 +175,8 @@ func (cs *checkoutService) GenerateFakeAPI(ctx context.Context, req *pb.Generate
 
 func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.GenerateSalesTaxRequest) (*pb.Empty, error) {
 	doSomeProcessing()
+	var country = "france"
+
 	if req.Country == country {
 		return nil, status.Errorf(codes.Internal, "Something went wrong with this request!")
 	} else {

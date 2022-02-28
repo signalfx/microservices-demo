@@ -2,17 +2,15 @@ module github.com/signalfx/microservices-demo/src/checkoutservice
 
 go 1.14
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
-
 require (
 	cloud.google.com/go v0.40.0
 	github.com/dropbox/godropbox v0.0.0-20200228041828-52ad444d3502 // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/facebookgo/stackerr v0.0.0-20150612192056-c2fcf88613f4 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.3.2
 	github.com/google/pprof v0.0.0-20190515194954-54271f7e092f // indirect
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.1.1
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
 	github.com/juju/testing v0.0.0-20200706033705-4c23f9c453cd // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
