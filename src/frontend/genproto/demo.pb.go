@@ -1308,7 +1308,7 @@ func (m *SendOrderConfirmationRequest) GetOrder() *OrderResult {
 	return nil
 }
 
-type GenerateFakeAPIRequest struct {
+type GeneratePaymentRequest struct {
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -1317,42 +1317,39 @@ type GenerateFakeAPIRequest struct {
 	Quantity  int32  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
 }
 
-func (m *GenerateFakeAPIRequest) Reset()         { *m = GenerateFakeAPIRequest{} }
-func (m *GenerateFakeAPIRequest) String() string { return proto.CompactTextString(m) }
-func (*GenerateFakeAPIRequest) ProtoMessage()    {}
-func (*GenerateFakeAPIRequest) Descriptor() ([]byte, []int) {
+func (m *GeneratePaymentRequest) Reset()         { *m = GeneratePaymentRequest{} }
+func (m *GeneratePaymentRequest) String() string { return proto.CompactTextString(m) }
+func (*GeneratePaymentRequest) ProtoMessage()    {}
+func (*GeneratePaymentRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ca53982754088a9d, []int{27}
 }
 
-func (m *GenerateFakeAPIRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GenerateFakeAPIRequest.Unmarshal(m, b)
+func (m *GeneratePaymentRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GeneratePaymentRequest.Unmarshal(m, b)
 }
-func (m *GenerateFakeAPIRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GenerateFakeAPIRequest.Marshal(b, m, deterministic)
+func (m *GeneratePaymentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GeneratePaymentRequest.Marshal(b, m, deterministic)
 }
-func (m *GenerateFakeAPIRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GenerateFakeAPIRequest.Merge(m, src)
+func (m *GeneratePaymentRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeneratePaymentRequest.Merge(m, src)
 }
-func (m *GenerateFakeAPIRequest) XXX_Size() int {
-	return xxx_messageInfo_GenerateFakeAPIRequest.Size(m)
+func (m *GeneratePaymentRequest) XXX_Size() int {
+	return xxx_messageInfo_GeneratePaymentRequest.Size(m)
 }
-func (m *GenerateFakeAPIRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GenerateFakeAPIRequest.DiscardUnknown(m)
+func (m *GeneratePaymentRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GeneratePaymentRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GenerateFakeAPIRequest proto.InternalMessageInfo
+var xxx_messageInfo_GeneratePaymentRequest proto.InternalMessageInfo
 
-
-
-
-func (x *GenerateFakeAPIRequest) GetProductId() string {
+func (x *GeneratePaymentRequest) GetProductId() string {
 	if x != nil {
 		return x.ProductId
 	}
 	return ""
 }
 
-func (x *GenerateFakeAPIRequest) GetQuantity() int32 {
+func (x *GeneratePaymentRequest) GetQuantity() int32 {
 	if x != nil {
 		return x.Quantity
 	}
@@ -1400,7 +1397,7 @@ func (x *GenerateSalesTaxRequest) GetCountry() string {
 	return ""
 }
 
-type GenerateSlowResponseRequest struct {
+type GenerateCartEmptyRequest struct {
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -1408,33 +1405,33 @@ type GenerateSlowResponseRequest struct {
 	Delay uint32 `protobuf:"varint,1,opt,name=delay,proto3" json:"delay,omitempty"`
 }
 
-func (m *GenerateSlowResponseRequest) Reset()         { *m = GenerateSlowResponseRequest{} }
-func (m *GenerateSlowResponseRequest) String() string { return proto.CompactTextString(m) }
-func (*GenerateSlowResponseRequest) ProtoMessage()    {}
-func (*GenerateSlowResponseRequest) Descriptor() ([]byte, []int) {
+func (m *GenerateCartEmptyRequest) Reset()         { *m = GenerateCartEmptyRequest{} }
+func (m *GenerateCartEmptyRequest) String() string { return proto.CompactTextString(m) }
+func (*GenerateCartEmptyRequest) ProtoMessage()    {}
+func (*GenerateCartEmptyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ca53982754088a9d, []int{29}
 }
 
-func (m *GenerateSlowResponseRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GenerateSlowResponseRequest.Unmarshal(m, b)
+func (m *GenerateCartEmptyRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GenerateCartEmptyRequest.Unmarshal(m, b)
 }
-func (m *GenerateSlowResponseRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GenerateSlowResponseRequest.Marshal(b, m, deterministic)
+func (m *GenerateCartEmptyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GenerateCartEmptyRequest.Marshal(b, m, deterministic)
 }
-func (m *GenerateSlowResponseRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GenerateSlowResponseRequest.Merge(m, src)
+func (m *GenerateCartEmptyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GenerateCartEmptyRequest.Merge(m, src)
 }
-func (m *GenerateSlowResponseRequest) XXX_Size() int {
-	return xxx_messageInfo_GenerateSlowResponseRequest.Size(m)
+func (m *GenerateCartEmptyRequest) XXX_Size() int {
+	return xxx_messageInfo_GenerateCartEmptyRequest.Size(m)
 }
-func (m *GenerateSlowResponseRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GenerateSlowResponseRequest.DiscardUnknown(m)
+func (m *GenerateCartEmptyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GenerateCartEmptyRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GenerateSlowResponseRequest proto.InternalMessageInfo
+var xxx_messageInfo_GenerateCartEmptyRequest proto.InternalMessageInfo
 
 
-func (x *GenerateSlowResponseRequest) GetDelay() uint32 {
+func (x *GenerateCartEmptyRequest) GetDelay() uint32 {
 	if x != nil {
 		return x.Delay
 	}
@@ -1707,9 +1704,9 @@ func init() {
 	proto.RegisterType((*OrderItem)(nil), "hipstershop.OrderItem")
 	proto.RegisterType((*OrderResult)(nil), "hipstershop.OrderResult")
 	proto.RegisterType((*SendOrderConfirmationRequest)(nil), "hipstershop.SendOrderConfirmationRequest")
-	proto.RegisterType((*GenerateFakeAPIRequest)(nil), "hipstershop.GenerateFakeAPIRequest")
+	proto.RegisterType((*GeneratePaymentRequest)(nil), "hipstershop.GeneratePaymentRequest")
 	proto.RegisterType((*GenerateSalesTaxRequest)(nil), "hipstershop.GenerateSalesTaxRequest")
-	proto.RegisterType((*GenerateSlowResponseRequest)(nil), "hipstershop.GenerateSlowResponseRequest")
+	proto.RegisterType((*GenerateCartEmptyRequest)(nil), "hipstershop.GenerateCartEmptyRequest")
 	proto.RegisterType((*PlaceOrderRequest)(nil), "hipstershop.PlaceOrderRequest")
 	proto.RegisterType((*PlaceOrderResponse)(nil), "hipstershop.PlaceOrderResponse")
 	proto.RegisterType((*AdRequest)(nil), "hipstershop.AdRequest")
@@ -2376,9 +2373,9 @@ var _EmailService_serviceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type CheckoutServiceClient interface {
 	PlaceOrder(ctx context.Context, in *PlaceOrderRequest, opts ...grpc.CallOption) (*PlaceOrderResponse, error)
-	GenerateFakeAPI(ctx context.Context, in *GenerateFakeAPIRequest, opts ...grpc.CallOption) (*Empty, error)
+	GeneratePayment(ctx context.Context, in *GeneratePaymentRequest, opts ...grpc.CallOption) (*Empty, error)
 	GenerateSalesTax(ctx context.Context, in *GenerateSalesTaxRequest, opts ...grpc.CallOption) (*Empty, error)
-	GenerateSlowResponse(ctx context.Context, in *GenerateSlowResponseRequest, opts ...grpc.CallOption) (*Empty, error)
+	GenerateCartEmpty(ctx context.Context, in *GenerateCartEmptyRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type checkoutServiceClient struct {
@@ -2398,9 +2395,9 @@ func (c *checkoutServiceClient) PlaceOrder(ctx context.Context, in *PlaceOrderRe
 	return out, nil
 }
 
-func (c *checkoutServiceClient) GenerateFakeAPI(ctx context.Context, in *GenerateFakeAPIRequest, opts ...grpc.CallOption) (*Empty, error) {
+func (c *checkoutServiceClient) GeneratePayment(ctx context.Context, in *GeneratePaymentRequest, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/hipstershop.CheckoutService/GenerateFakeAPI", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hipstershop.CheckoutService/GeneratePayment", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2416,29 +2413,29 @@ func (c *checkoutServiceClient) GenerateSalesTax(ctx context.Context, in *Genera
 	return out, nil
 }
 
-func (c *checkoutServiceClient) GenerateSlowResponse(ctx context.Context, in *GenerateSlowResponseRequest, opts ...grpc.CallOption) (*Empty, error) {
+func (c *checkoutServiceClient) GenerateCartEmpty(ctx context.Context, in *GenerateCartEmptyRequest, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/hipstershop.CheckoutService/GenerateSlowResponse", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/hipstershop.CheckoutService/GenerateCartEmpty", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func _CheckoutService_GenerateFakeAPI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateFakeAPIRequest)
+func _CheckoutService_GeneratePayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GeneratePaymentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CheckoutServiceServer).GenerateFakeAPI(ctx, in)
+		return srv.(CheckoutServiceServer).GeneratePayment(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hipstershop.CheckoutService/GenerateFakeAPI",
+		FullMethod: "/hipstershop.CheckoutService/GeneratePayment",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CheckoutServiceServer).GenerateFakeAPI(ctx, req.(*GenerateFakeAPIRequest))
+		return srv.(CheckoutServiceServer).GeneratePayment(ctx, req.(*GeneratePaymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2461,20 +2458,20 @@ func _CheckoutService_GenerateSalesTax_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _CheckoutService_GenerateSlowResponse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateSlowResponseRequest)
+func _CheckoutService_GenerateCartEmpty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateCartEmptyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CheckoutServiceServer).GenerateSlowResponse(ctx, in)
+		return srv.(CheckoutServiceServer).GenerateCartEmpty(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/hipstershop.CheckoutService/GenerateSlowResponse",
+		FullMethod: "/hipstershop.CheckoutService/GenerateCartEmpty",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CheckoutServiceServer).GenerateSlowResponse(ctx, req.(*GenerateSlowResponseRequest))
+		return srv.(CheckoutServiceServer).GenerateCartEmpty(ctx, req.(*GenerateCartEmptyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2482,9 +2479,9 @@ func _CheckoutService_GenerateSlowResponse_Handler(srv interface{}, ctx context.
 // CheckoutServiceServer is the server API for CheckoutService service.
 type CheckoutServiceServer interface {
 	PlaceOrder(context.Context, *PlaceOrderRequest) (*PlaceOrderResponse, error)
-	GenerateFakeAPI(context.Context, *GenerateFakeAPIRequest) (*Empty, error)
+	GeneratePayment(context.Context, *GeneratePaymentRequest) (*Empty, error)
 	GenerateSalesTax(context.Context, *GenerateSalesTaxRequest) (*Empty, error)
-	GenerateSlowResponse(context.Context, *GenerateSlowResponseRequest) (*Empty, error)
+	GenerateCartEmpty(context.Context, *GenerateCartEmptyRequest) (*Empty, error)
 }
 
 func RegisterCheckoutServiceServer(s *grpc.Server, srv CheckoutServiceServer) {
@@ -2518,16 +2515,16 @@ var _CheckoutService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _CheckoutService_PlaceOrder_Handler,
 		},
 		{
-			MethodName: "GenerateFakeAPI",
-			Handler:    _CheckoutService_GenerateFakeAPI_Handler,
+			MethodName: "GeneratePayment",
+			Handler:    _CheckoutService_GeneratePayment_Handler,
 		},
 		{
 			MethodName: "GenerateSalesTax",
 			Handler:    _CheckoutService_GenerateSalesTax_Handler,
 		},
 		{
-			MethodName: "GenerateSlowResponse",
-			Handler:    _CheckoutService_GenerateSlowResponse_Handler,
+			MethodName: "GenerateCartEmpty",
+			Handler:    _CheckoutService_GenerateCartEmpty_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

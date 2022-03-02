@@ -304,9 +304,9 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (fe *frontendServer) generateFakeAPIHandler(w http.ResponseWriter, r *http.Request) {
+func (fe *frontendServer) generatePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
-	log.Debug("generating 500 response with generateFakeAPI call")
+	log.Debug("generate payment")
 
 	quantity, _ := strconv.ParseInt(r.FormValue("quantity"), 10, 32)
 	productID := r.FormValue("product_id")
@@ -317,7 +317,7 @@ func (fe *frontendServer) generateFakeAPIHandler(w http.ResponseWriter, r *http.
 	}
 
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		GenerateFakeAPI(r.Context(), &pb.GenerateFakeAPIRequest{
+		GeneratePayment(r.Context(), &pb.GeneratePaymentRequest{
 			ProductId: productID,
 			Quantity:  int32(quantity),
 		})
@@ -331,7 +331,7 @@ func (fe *frontendServer) generateFakeAPIHandler(w http.ResponseWriter, r *http.
 
 func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
-	log.Debug("generating 408 response with generateSalesTax API call for france")
+	log.Debug("generate Sales Tax")
 
 	country := r.URL.Query().Get("country")
 
@@ -347,14 +347,14 @@ func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusOK)
 }
 
-func (fe *frontendServer) generateSlowResponseHandler(w http.ResponseWriter, r *http.Request) {
+func (fe *frontendServer) generateCartEmptyHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
-	log.Debug("generating slow response with ggenerateSlowResponse API call")
+	log.Debug("generate Cart Empty")
 
 	u64, _ := strconv.ParseUint(r.URL.Query().Get("delay"), 10, 32)
 
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		GenerateSlowResponse(r.Context(), &pb.GenerateSlowResponseRequest{
+		GenerateCartEmpty(r.Context(), &pb.GenerateCartEmptyRequest{
 			Delay: uint32(u64),
 		})
 	if err != nil {

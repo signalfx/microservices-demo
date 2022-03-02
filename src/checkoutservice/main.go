@@ -168,7 +168,7 @@ func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.H
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
-func (cs *checkoutService) GenerateFakeAPI(ctx context.Context, req *pb.GenerateFakeAPIRequest) (*pb.Empty, error) {
+func (cs *checkoutService) GeneratePayment(ctx context.Context, req *pb.GeneratePaymentRequest) (*pb.Empty, error) {
 	doSomeProcessing()
 	return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
 }
@@ -184,7 +184,7 @@ func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.Generat
 	}
 }
 
-func (cs *checkoutService) GenerateSlowResponse(ctx context.Context, req *pb.GenerateSlowResponseRequest) (*pb.Empty, error) {
+func (cs *checkoutService) GenerateCartEmpty(ctx context.Context, req *pb.GenerateCartEmptyRequest) (*pb.Empty, error) {
 	doSomeProcessing()
 	i64 := int64(req.Delay)
 	var d time.Duration = time.Duration(i64)
