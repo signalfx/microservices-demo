@@ -138,6 +138,8 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "User-agent: *\nDisallow: /") })
 	r.HandleFunc("/_healthz", func(w http.ResponseWriter, _ *http.Request) { fmt.Fprint(w, "ok") })
+
+	// Added new endpoints
 	r.HandleFunc("/payment/send", svc.generatePaymentHandler).Methods(http.MethodPost)
 	r.HandleFunc("/cart/calculateTax", svc.generateSalesTaxHandler).Methods(http.MethodGet)
 	r.HandleFunc("/cart/clear", svc.generateCartEmptyHandler).Methods(http.MethodGet)

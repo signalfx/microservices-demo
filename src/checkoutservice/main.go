@@ -168,15 +168,26 @@ func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.H
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+// Implemented GeneratePayment GRPC server API of checkoutService.
+// This API will return error in response.
 func (cs *checkoutService) GeneratePayment(ctx context.Context, req *pb.GeneratePaymentRequest) (*pb.Empty, error) {
+	// doSomeProcessing() is called for some processing delay in API call
 	doSomeProcessing()
+
+	// Return error
 	return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
 }
 
+// Implemented GenerateSalesTax GRPC server API of checkoutService.
+// This API will return error in response if country in request is france, else it will return success.
 func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.GenerateSalesTaxRequest) (*pb.Empty, error) {
+	// doSomeProcessing() is called for some processing delay in API call
 	doSomeProcessing()
+
 	var country = "france"
 
+	// if country data provided in request is france then return error
+	// else return success
 	if req.Country == country {
 		return nil, status.Errorf(codes.Internal, "Something went wrong with this request!")
 	} else {
@@ -184,17 +195,25 @@ func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.Generat
 	}
 }
 
+// Implemented GenerateCartEmpty GRPC server API of checkoutService.
+// This API will return success in response after applying some delay for slowing down the API response.
 func (cs *checkoutService) GenerateCartEmpty(ctx context.Context, req *pb.GenerateCartEmptyRequest) (*pb.Empty, error) {
+	// doSomeProcessing() is called for some processing delay in API call
 	doSomeProcessing()
+
+	// Fetch delay from request
 	i64 := int64(req.Delay)
 	var d time.Duration = time.Duration(i64)
 
+	// if data fetched is valid then apply delay of given time duration
+	// else apply delay of 5 seconds
 	if i64 > 0 {
 		time.Sleep(d * time.Second)
 	} else {
 		time.Sleep(5 * time.Second)
 	}
 
+	// Return success after delay
 	return new(pb.Empty), nil
 }
 
@@ -450,6 +469,8 @@ func getTraceLogFields(ctx context.Context) logrus.Fields {
 	return fields
 }
 
+// doSomeProcessing is for doing some processing
+// This function is created for some processing delay for API call.
 func doSomeProcessing() {
 	for i := 0; i < 500; i++ {
 		j := i

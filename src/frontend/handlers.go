@@ -304,23 +304,30 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// generatePaymentHandler is for generating 500 error
 func (fe *frontendServer) generatePaymentHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
 	log.Debug("generate payment")
 
+	// Fetch request data
 	quantity, _ := strconv.ParseInt(r.FormValue("quantity"), 10, 32)
 	productID := r.FormValue("product_id")
 
+	// Validate request data
 	if productID == "" || quantity <= 0 {
 		renderHTTPError(log, r, w, errors.New("invalid form input"), http.StatusBadRequest)
 		return
 	}
 
+	// GRPC client API call of checkoutService with request data
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
 		GeneratePayment(r.Context(), &pb.GeneratePaymentRequest{
 			ProductId: productID,
 			Quantity:  int32(quantity),
 		})
+
+	// Handle error
+	// Return error with 500 status code.
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusInternalServerError)
 		return
@@ -329,16 +336,23 @@ func (fe *frontendServer) generatePaymentHandler(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusOK)
 }
 
+// generateSalesTaxHandler is for generating 408 error if country is 'france'
 func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
 	log.Debug("generate Sales Tax")
 
+	// Fetch query parameter
 	country := r.URL.Query().Get("country")
 
+	// GRPC client API call of checkoutService
+	// API request  is formed with fetched data
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
 		GenerateSalesTax(r.Context(), &pb.GenerateSalesTaxRequest{
 			Country: country,
 		})
+
+	// Handle error
+	// Return error with 408 status code.
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusRequestTimeout)
 		return
@@ -347,16 +361,23 @@ func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusOK)
 }
 
+// generateCartEmptyHandler is for slow response of provided delay, default response time is 5 seconds
 func (fe *frontendServer) generateCartEmptyHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
 	log.Debug("generate Cart Empty")
 
+	// Fetch query parameter
 	u64, _ := strconv.ParseUint(r.URL.Query().Get("delay"), 10, 32)
 
+	// GRPC client API call of checkoutService
+	// API request  is formed with fetched data
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
 		GenerateCartEmpty(r.Context(), &pb.GenerateCartEmptyRequest{
 			Delay: uint32(u64),
 		})
+
+	// Handle error
+	// Return error with 500 status code.
 	if err != nil {
 		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusInternalServerError)
 		return
