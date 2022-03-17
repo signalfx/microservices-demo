@@ -195,7 +195,6 @@ func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.Generat
 		}
 		return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
 	}
-
 	return new(pb.Empty), nil
 }
 
