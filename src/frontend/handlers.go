@@ -30,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/signalfx/signalfx-go-tracing/ddtrace/tracer"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/signalfx/microservices-demo/src/frontend/genproto"
 	"github.com/signalfx/microservices-demo/src/frontend/money"
@@ -339,22 +341,32 @@ func (fe *frontendServer) generatePaymentHandler(w http.ResponseWriter, r *http.
 // generateSalesTaxHandler is for generating 408 error if country is 'france'
 func (fe *frontendServer) generateSalesTaxHandler(w http.ResponseWriter, r *http.Request) {
 	log := getLoggerWithTraceFields(r.Context())
-	log.Debug("generate Sales Tax")
 
-	// Fetch query parameter
+	ctx := r.Context()
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// Fetch query parameterlog.Debug("generate Sales Tax")
 	country := r.URL.Query().Get("country")
 
 	// GRPC client API call of checkoutService
 	// API request  is formed with fetched data
 	_, err := pb.NewCheckoutServiceClient(fe.checkoutSvcConn).
-		GenerateSalesTax(r.Context(), &pb.GenerateSalesTaxRequest{
+		GenerateSalesTax(ctx, &pb.GenerateSalesTaxRequest{
 			Country: country,
 		})
 
 	// Handle error
 	// Return error with 408 status code.
 	if err != nil {
-		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusRequestTimeout)
+		timeOutErr, ok := status.FromError(err)
+		if ok {
+			if timeOutErr.Code() == codes.DeadlineExceeded {
+				renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusRequestTimeout)
+				return
+			}
+		}
+		renderHTTPError(log, r, w, errors.Wrap(err, "Something went wrong with this request!"), http.StatusInternalServerError)
 		return
 	}
 

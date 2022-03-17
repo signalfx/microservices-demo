@@ -189,10 +189,14 @@ func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.Generat
 	// if country data provided in request is france then return error
 	// else return success
 	if req.Country == country {
-		return nil, status.Errorf(codes.Internal, "Something went wrong with this request!")
-	} else {
-		return new(pb.Empty), nil
+		time.Sleep(2 * time.Second)
+		if ctx.Err() == context.Canceled {
+			return nil, status.Error(codes.Canceled, "Cancelled the request")
+		}
+		return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
 	}
+
+	return new(pb.Empty), nil
 }
 
 // Implemented GenerateCartEmpty GRPC server API of checkoutService.
