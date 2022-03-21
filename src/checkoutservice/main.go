@@ -189,11 +189,11 @@ func (cs *checkoutService) GenerateSalesTax(ctx context.Context, req *pb.Generat
 	// if country data provided in request is france then return error
 	// else return success
 	if req.Country == country {
-		time.Sleep(2 * time.Second)
-		if ctx.Err() == context.Canceled {
-			return nil, status.Error(codes.Canceled, "Cancelled the request")
+		select {
+		case <-ctx.Done():
+			return nil, status.Error(codes.Canceled, "request is cancelled or timed out")
+		case <-time.After(3 * time.Second):
 		}
-		return new(pb.Empty), status.Errorf(codes.Internal, "Something went wrong with this request!")
 	}
 	return new(pb.Empty), nil
 }
