@@ -40,7 +40,7 @@ to open a new PR:
 ```shell
 $ git checkout -b myfeature
 # edit
-# verify that all applications are running well and emit expected telemetry
+# verify that all applications are running well and emitting expected telemetry
 $ git add .
 $ git commit -m "My commit mesage"
 $ git push --set-upstream origin myfeature
