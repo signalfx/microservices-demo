@@ -70,6 +70,7 @@ spec:
             value: "adservice:9555"
           - name: RUM_REALM
           - name: RUM_AUTH
+          - name: RUM_REPLAY_AUTH
           - name: RUM_APP_NAME
           - name: RUM_ENVIRONMENT
           - name: RUM_DEBUG

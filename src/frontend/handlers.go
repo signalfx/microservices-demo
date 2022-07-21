@@ -104,6 +104,7 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 		"rum_app_name":    os.Getenv("RUM_APP_NAME"),
 		"rum_environment": os.Getenv("RUM_ENVIRONMENT"),
 		"rum_debug":       os.Getenv("RUM_DEBUG"),
+		"rum_replay_auth": os.Getenv("RUM_REPLAY_AUTH"),
 	}); err != nil {
 		log.Error(err)
 	}
@@ -185,6 +186,7 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 		"rum_app_name":    os.Getenv("RUM_APP_NAME"),
 		"rum_environment": os.Getenv("RUM_ENVIRONMENT"),
 		"rum_debug":       os.Getenv("RUM_DEBUG"),
+		"rum_replay_auth": os.Getenv("RUM_REPLAY_AUTH"),
 	}); err != nil {
 		log.Println(err)
 	}
@@ -301,6 +303,7 @@ func (fe *frontendServer) viewCartHandler(w http.ResponseWriter, r *http.Request
 		"rum_app_name":     os.Getenv("RUM_APP_NAME"),
 		"rum_environment":  os.Getenv("RUM_ENVIRONMENT"),
 		"rum_debug":        os.Getenv("RUM_DEBUG"),
+		"rum_replay_auth": os.Getenv("RUM_REPLAY_AUTH"),
 	}); err != nil {
 		log.Println(err)
 	}
@@ -467,6 +470,7 @@ func (fe *frontendServer) placeOrderHandler(w http.ResponseWriter, r *http.Reque
 		"rum_app_name":    os.Getenv("RUM_APP_NAME"),
 		"rum_environment": os.Getenv("RUM_ENVIRONMENT"),
 		"rum_debug":       os.Getenv("RUM_DEBUG"),
+		"rum_replay_auth": os.Getenv("RUM_REPLAY_AUTH"),
 	}); err != nil {
 		log.Println(err)
 	}
@@ -531,6 +535,7 @@ func renderHTTPError(log logrus.FieldLogger, r *http.Request, w http.ResponseWri
 		"rum_app_name":    os.Getenv("RUM_APP_NAME"),
 		"rum_environment": os.Getenv("RUM_ENVIRONMENT"),
 		"rum_debug":       os.Getenv("RUM_DEBUG"),
+		"rum_replay_auth": os.Getenv("RUM_REPLAY_AUTH"),
 		"status":          http.StatusText(code)})
 }
 

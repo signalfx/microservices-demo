@@ -34,6 +34,10 @@ TOLERATION_VALUE="${TOLERATION_VALUE:--}"
 # Optional Splunk RUM configuration
 RUM_REALM="${RUM_REALM:--}"
 RUM_AUTH="${RUM_AUTH:--}"
+
+# Optional Splunk RUM Replay Auth
+RUM_REPLAY_AUTH="${RUM_REPLAY_AUTH:--}"
+
 RUM_APP_NAME="${RUM_APP_NAME:-hipster-shop-demo}"
 RUM_ENVIRONMENT="${RUM_ENVIRONMENT:--}"
 RUM_DEBUG="${RUM_DEBUG:--}"
@@ -130,6 +134,13 @@ mk_kubernetes_manifests() {
         then
             pattern="^(\s*)- name: RUM_DEBUG"
             replace="\1- name: RUM_DEBUG\n\1  value: \"${RUM_DEBUG}\""
+            out_manifest="$(gsed -r "s|$pattern|$replace|g" <(echo "${out_manifest}") )"
+        fi
+
+        if [ ${RUM_REPLAY_AUTH} != "-" ]
+        then
+            pattern="^(\s*)- name: RUM_REPLAY_AUTH"
+            replace="\1- name: RUM_REPLAY_AUTH\n\1  value: \"${RUM_REPLAY_AUTH}\""
             out_manifest="$(gsed -r "s|$pattern|$replace|g" <(echo "${out_manifest}") )"
         fi
     fi
