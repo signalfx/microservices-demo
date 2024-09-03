@@ -11,4 +11,4 @@ opentelemetry-instrumentation-requests==0.41b0
 opentelemetry-instrumentation-sqlite3==0.41b0
 python-json-logger==0.1.11
 requests==2.31.0
-urllib3==1.26.6
+urllib3==1.26.18

@@ -1,4 +1,4 @@
-FROM python:3.10-alpine3.18
+FROM python:3.12-alpine3.19
 
 RUN apk add --no-cache \
         g++ \
