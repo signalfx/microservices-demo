@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package hipstershop;
 
+option go_package = "github.com/signalfx/miscroservices-demo/hipstershop";
+
 // -----------------Cart service-----------------
 
 service CartService {

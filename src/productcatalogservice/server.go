@@ -176,7 +176,9 @@ func initProfiling(service, version string) {
 	logger.Warn("could not initialize Stackdriver profiler after retrying, giving up")
 }
 
-type productCatalog struct{}
+type productCatalog struct {
+	pb.UnimplementedProductCatalogServiceServer
+}
 
 func readCatalogFile(ctx context.Context, catalog *pb.ListProductsResponse) error {
 	log := logger.WithFields(getTraceLogFields(ctx))

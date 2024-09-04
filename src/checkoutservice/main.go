@@ -62,6 +62,8 @@ func init() {
 }
 
 type checkoutService struct {
+	pb.UnimplementedCheckoutServiceServer
+
 	productCatalogSvcAddr string
 	cartSvcAddr           string
 	currencySvcAddr       string
