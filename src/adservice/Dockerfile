@@ -25,12 +25,13 @@ RUN curl -fsSL "https://github.com/grpc-ecosystem/grpc-health-probe/releases/dow
     echo "${GRPC_HEALTH_PROBE_SHA256}  /tmp/grpc_health_probe" | sha256sum -c - && \
     chmod +x /tmp/grpc_health_probe
 
-FROM eclipse-temurin:21-jre-alpine-3.23
+FROM eclipse-temurin:21-jre-noble
 
-RUN addgroup -S app && adduser -S -G app app && \
+RUN groupadd --system app && \
+    useradd --system --gid app --home-dir /app app && \
     mkdir -p /opt/sfx
 
-COPY --from=builder /tmp/splunk-otel-javaagent.jar /opt/sfx/splunk-otel-javaagent.jar
+COPY --from=builder /tmp/splunk-otel-javaagent.jar /opt/sfx/splunk-otel-javaagent-all.jar
 COPY --from=builder /tmp/grpc_health_probe /bin/grpc_health_probe
 
 WORKDIR /app
