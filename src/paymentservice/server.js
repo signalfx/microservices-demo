@@ -16,39 +16,42 @@ const path = require('path');
 const grpc = require('@grpc/grpc-js');
 const pino = require('pino');
 const protoLoader = require('@grpc/proto-loader');
-const { getSpan, context } = require("@opentelemetry/api");
+const { context, trace } = require('@opentelemetry/api');
 
 const charge = require('./charge');
 
 const logger = pino({
   name: 'paymentservice-server',
   messageKey: 'message',
-  changeLevelName: 'severity',
-  useLevelLabels: true,
+  formatters: {
+    level (label) {
+      return { severity: label };
+    }
+  },
   timestamp: pino.stdTimeFunctions.unixTime,
-  mixin() {
-    const span = getSpan(context.active())
+  mixin () {
+    const span = trace.getSpan(context.active());
     if (!span) {
       return {};
     }
-    const { traceId, spanId } = span.context();
+    const { traceId, spanId } = span.spanContext();
     return {
       trace_id: traceId.slice(-16), // convert to 64-bit format
       span_id: spanId,
       'service.name': 'paymentservice'
     };
-  },
+  }
 });
 
 class HipsterShopServer {
-  constructor(protoRoot, port = HipsterShopServer.PORT) {
+  constructor (protoRoot, port = HipsterShopServer.PORT) {
     this.port = port;
 
     this.packages = {
       hipsterShop: this.loadProto(path.join(protoRoot, 'demo.proto')),
       health: this.loadProto(
         path.join(protoRoot, 'grpc/health/v1/health.proto')
-      ),
+      )
     };
 
     this.server = new grpc.Server();
@@ -60,7 +63,7 @@ class HipsterShopServer {
    * @param {*} call  { ChargeRequest }
    * @param {*} callback  fn(err, ChargeResponse)
    */
-  static ChargeServiceHandler(call, callback) {
+  static ChargeServiceHandler (call, callback) {
     try {
       logger.info(
         `PaymentService#Charge invoked with request ${JSON.stringify(
@@ -80,11 +83,11 @@ class HipsterShopServer {
     }
   }
 
-  static CheckHandler(call, callback) {
+  static CheckHandler (call, callback) {
     callback(null, { status: 'SERVING' });
   }
 
-  listen() {
+  listen () {
     this.server.bindAsync(
       `0.0.0.0:${this.port}`,
       grpc.ServerCredentials.createInsecure(),
@@ -94,31 +97,31 @@ class HipsterShopServer {
         }
         console.log(`PaymentService grpc server listening on ${port}`);
         this.server.start();
-      },
+      }
     );
   }
 
-  loadProto(path) {
+  loadProto (path) {
     const packageDefinition = protoLoader.loadSync(path, {
       keepCase: true,
       longs: String,
       enums: String,
       defaults: true,
-      oneofs: true,
+      oneofs: true
     });
     return grpc.loadPackageDefinition(packageDefinition);
   }
 
-  loadAllProtos(protoRoot) {
+  loadAllProtos (protoRoot) {
     const hipsterShopPackage = this.packages.hipsterShop.hipstershop;
     const healthPackage = this.packages.health.grpc.health.v1;
 
     this.server.addService(hipsterShopPackage.PaymentService.service, {
-      charge: HipsterShopServer.ChargeServiceHandler.bind(this),
+      charge: HipsterShopServer.ChargeServiceHandler.bind(this)
     });
 
     this.server.addService(healthPackage.Health.service, {
-      check: HipsterShopServer.CheckHandler.bind(this),
+      check: HipsterShopServer.CheckHandler.bind(this)
     });
   }
 }

@@ -13,42 +13,45 @@
 // limitations under the License.
 
 const cardValidator = require('simple-card-validator');
-const uuid = require('uuid/v4');
+const { randomUUID } = require('node:crypto');
 const pino = require('pino');
 
-const { context, getSpan, setSpan, SpanKind, trace } = require('@opentelemetry/api');
+const { context, SpanKind, trace } = require('@opentelemetry/api');
 
 const logger = pino({
   name: 'paymentservice',
   messageKey: 'message',
-  changeLevelName: 'severity',
-  useLevelLabels: true,
+  formatters: {
+    level (label) {
+      return { severity: label };
+    }
+  },
   timestamp: pino.stdTimeFunctions.unixTime,
-  mixin() {
-    const span = getSpan(context.active());
+  mixin () {
+    const span = trace.getSpan(context.active());
     if (!span) {
       return {};
     }
-    const { traceId, spanId } = span.context();
+    const { traceId, spanId } = span.spanContext();
 
     return {
       trace_id: traceId.slice(-16), // convert to 64-bit format
       span_id: spanId,
       'service.name': 'paymentservice'
     };
-  },
+  }
 });
 
 // Demo Data
 
 // Percentage of requests to fail: [0, 1]
 const API_TOKEN_FAILURE_RATE = Number.parseFloat(
-  process.env['API_TOKEN_FAILURE_RATE'] || 0
+  process.env.API_TOKEN_FAILURE_RATE || 0
 );
 
 // Percentage of requests to fail for deserialization: [0, 1]
 const SERIALIZATION_FAILURE_RATE = Number.parseFloat(
-  process.env['SERIALIZATION_FAILURE_RATE'] || 0
+  process.env.SERIALIZATION_FAILURE_RATE || 0
 );
 
 // Success attributes
@@ -63,26 +66,26 @@ const FAILURE_K8S_POD_UID = [
   'payment-service-3483d',
   'payment-service-ab82e',
   'payment-service-9aaf3',
-  'payment-service-6bbaf',
+  'payment-service-6bbaf'
 ];
 const API_TOKEN_FAILURE_TOKEN = 'test-20e26e90-356b-432e-a2c6-956fc03f5609';
 
 // Artificial delay
 const SUCCESS_PAYMENT_SERVICE_DURATION_MILLIS = Number.parseInt(
-  process.env['SUCCESS_PAYMENT_SERVICE_DURATION_MILLIS'] || 200
+  process.env.SUCCESS_PAYMENT_SERVICE_DURATION_MILLIS || 200
 );
 const ERROR_PAYMENT_SERVICE_DURATION_MILLIS = Number.parseInt(
-  process.env['ERROR_PAYMENT_SERVICE_DURATION_MILLIS'] || 1000
+  process.env.ERROR_PAYMENT_SERVICE_DURATION_MILLIS || 1000
 );
 
 /** Return random element from given array */
-function random(arr) {
+function random (arr) {
   const index = Math.floor(Math.random() * arr.length);
   return arr[index];
 }
 
 /** Returns random integer between `from` and `to` */
-function randomInt(from, to) {
+function randomInt (from, to) {
   return Math.floor((to - from) * Math.random() + from);
 }
 
@@ -92,15 +95,17 @@ function randomInt(from, to) {
  * @param {*} request
  * @return transaction_id - a random uuid v4.
  */
-module.exports = async function charge(request) {
+module.exports = async function charge (request) {
   // Get handle to the active span and some random attributes for every request. In a failure
   // case some of these might be overwritten to constrain the domain of the error.
-  const grpcActiveSpan = getSpan(context.active());
-  grpcActiveSpan.setAttributes({
-    version: SUCCESS_VERSION,
-    'tenant.level': random(SUCCESS_TENANT_LEVEL),
-    kubernetes_pod_uid: random(SUCCESS_K8S_POD_UID),
-  });
+  const grpcActiveSpan = trace.getSpan(context.active());
+  if (grpcActiveSpan) {
+    grpcActiveSpan.setAttributes({
+      version: SUCCESS_VERSION,
+      'tenant.level': random(SUCCESS_TENANT_LEVEL),
+      kubernetes_pod_uid: random(SUCCESS_K8S_POD_UID)
+    });
+  }
 
   // Pick successful or failing token base on configured api token failure rate
   const token =
@@ -113,18 +118,20 @@ module.exports = async function charge(request) {
   // Fail due to serialization error based on configured serialization failure rate
   if (Math.random() < SERIALIZATION_FAILURE_RATE) {
     await serializeRequestDataToProto().catch((err) => {
-      const kubernetes_pod_uid = random(FAILURE_K8S_POD_UID);
+      const kubernetesPodUid = random(FAILURE_K8S_POD_UID);
 
-      grpcActiveSpan.setAttributes({
-        version: FAILURE_VERSION,
-        kubernetes_pod_uid,
-        error: true,
-      });
+      if (grpcActiveSpan) {
+        grpcActiveSpan.setAttributes({
+          version: FAILURE_VERSION,
+          kubernetes_pod_uid: kubernetesPodUid,
+          error: true
+        });
+      }
 
       logger
         .child({
           version: FAILURE_VERSION,
-          kubernetes_pod_uid,
+          kubernetes_pod_uid: kubernetesPodUid
         })
         .error(err);
 
@@ -134,7 +141,10 @@ module.exports = async function charge(request) {
 
   // Represents an "external service call" to a payment processor. This is the "call" that will
   // either succeed or fail due to an API token issue.
-  const tracer = trace.getTracer('charge')
+  const tracer = trace.getTracer('charge');
+  const parentContext = grpcActiveSpan
+    ? trace.setSpan(context.active(), grpcActiveSpan)
+    : context.active();
   const externalPaymentProcessorClientSpan = tracer.startSpan(
     'buttercup.payments.api',
     {
@@ -143,17 +153,17 @@ module.exports = async function charge(request) {
         'peer.service': 'ButtercupPayments',
         'http.url': 'https://api.buttercup-payments.com/charge',
         'http.method': 'POST',
-        'http.status_code': '200',
-      },
+        'http.status_code': '200'
+      }
     },
-    setSpan(context.active(), grpcActiveSpan),
+    parentContext
   );
 
   // Call into our "external service" for charge processing
   return buttercupPaymentsApiCharge(request, token)
-    .then(({ transaction_id, cardType, cardNumber, amount }) => {
+    .then(({ transaction_id: transactionId, cardType, cardNumber, amount }) => {
       externalPaymentProcessorClientSpan.setAttributes({
-        'http.status_code': '200',
+        'http.status_code': '200'
       });
 
       logger.info(
@@ -163,36 +173,38 @@ module.exports = async function charge(request) {
           cardNumberEnding: cardNumber.substr(-4),
           'amount.currency_code': amount.currency_code,
           'amount.units': amount.units,
-          'amount.nanos': amount.nanos,
+          'amount.nanos': amount.nanos
         },
         'Transaction processed'
       );
 
-      return { transaction_id };
+      return { transaction_id: transactionId };
     })
     .catch((err) => {
       externalPaymentProcessorClientSpan.setAttributes({
-        'http.status_code': err.code,
+        'http.status_code': err.code
       });
 
       if (err.code === 401) {
         // Mark error conditions on the root span; we force these for the demo
-        grpcActiveSpan.setAttributes({
-          version: FAILURE_VERSION,
-          kubernetes_pod_uid: random(FAILURE_K8S_POD_UID),
-          error: true,
-        });
+        if (grpcActiveSpan) {
+          grpcActiveSpan.setAttributes({
+            version: FAILURE_VERSION,
+            kubernetes_pod_uid: random(FAILURE_K8S_POD_UID),
+            error: true
+          });
+        }
 
         // Log out error about token
         logger.error(
           {
             token: API_TOKEN_FAILURE_TOKEN,
-            version: FAILURE_VERSION,
+            version: FAILURE_VERSION
           },
           `Failed payment processing through ButtercupPayments: Invalid API Token (${API_TOKEN_FAILURE_TOKEN})`
         );
       } else {
-        logger.error(`Failed payment processing through ButtercupPayments`);
+        logger.error('Failed payment processing through ButtercupPayments');
       }
       throw err;
     })
@@ -204,7 +216,7 @@ module.exports = async function charge(request) {
 /**
  * Attempt serialization, but it fails!
  */
-async function serializeRequestDataToProto() {
+async function serializeRequestDataToProto () {
   return Promise.reject(new Error('Serialization failure'));
 }
 
@@ -215,7 +227,7 @@ async function serializeRequestDataToProto() {
  * @param {*} request
  * @param {*} token
  */
-function buttercupPaymentsApiCharge(request, token) {
+function buttercupPaymentsApiCharge (request, token) {
   return new Promise((resolve, reject) => {
     // Check for invalid token
     if (token === API_TOKEN_FAILURE_TOKEN) {
@@ -247,7 +259,7 @@ function buttercupPaymentsApiCharge(request, token) {
     const currentYear = new Date().getFullYear();
     const {
       credit_card_expiration_year: year,
-      credit_card_expiration_month: month,
+      credit_card_expiration_month: month
     } = creditCard;
     if (currentYear * 12 + currentMonth > year * 12 + month) {
       throw new ExpiredCreditCard(cardNumber.replace('-', ''), month, year);
@@ -255,7 +267,7 @@ function buttercupPaymentsApiCharge(request, token) {
 
     const timeoutMillis = randomInt(0, SUCCESS_PAYMENT_SERVICE_DURATION_MILLIS);
     setTimeout(() => {
-      resolve({ transaction_id: uuid(), cardType, cardNumber, amount });
+      resolve({ transaction_id: randomUUID(), cardType, cardNumber, amount });
     }, timeoutMillis);
   });
 }
@@ -263,34 +275,34 @@ function buttercupPaymentsApiCharge(request, token) {
 // Error Types
 
 class InternalError extends Error {
-  constructor(message) {
+  constructor (message) {
     super(message);
     this.code = 500;
   }
 }
 
 class InvalidRequestError extends Error {
-  constructor(token) {
+  constructor (token) {
     super('Invalid request');
     this.code = 401; // Authorization error
   }
 }
 
 class CreditCardError extends Error {
-  constructor(message) {
+  constructor (message) {
     super(message);
     this.code = 400; // Invalid argument error
   }
 }
 
 class InvalidCreditCard extends CreditCardError {
-  constructor(cardType) {
-    super(`Credit card info is invalid`);
+  constructor (cardType) {
+    super('Credit card info is invalid');
   }
 }
 
 class UnacceptedCreditCard extends CreditCardError {
-  constructor(cardType) {
+  constructor (cardType) {
     super(
       `Sorry, we cannot process ${cardType} credit cards. Only VISA or MasterCard is accepted.`
     );
@@ -298,7 +310,7 @@ class UnacceptedCreditCard extends CreditCardError {
 }
 
 class ExpiredCreditCard extends CreditCardError {
-  constructor(number, month, year) {
+  constructor (number, month, year) {
     super(
       `Your credit card (ending ${number.substr(
         -4

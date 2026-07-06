@@ -1,29 +1,28 @@
-const { NodeTracerProvider } = require('@opentelemetry/node');
-const { B3MultiPropagator } = require('@opentelemetry/propagator-b3');
+const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
+const { B3InjectEncoding, B3Propagator } = require('@opentelemetry/propagator-b3');
 const { ZipkinExporter } = require('@opentelemetry/exporter-zipkin');
 const { GrpcInstrumentation } = require('@opentelemetry/instrumentation-grpc');
-const { BatchSpanProcessor, ConsoleSpanExporter } = require('@opentelemetry/tracing');
+const { BatchSpanProcessor, ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base');
 const { registerInstrumentations } = require('@opentelemetry/instrumentation');
 
-const provider = new NodeTracerProvider();
+const spanProcessors = [new BatchSpanProcessor(new ZipkinExporter({
+  serviceName: 'paymentservice',
+  url: process.env.SIGNALFX_ENDPOINT_URL
+}))];
+
+if (process.env.CONSOLE_SPAN === 'true') {
+  spanProcessors.push(new BatchSpanProcessor(new ConsoleSpanExporter()));
+}
+
+const provider = new NodeTracerProvider({ spanProcessors });
 provider.register({
-  propagator: new B3MultiPropagator(),
+  propagator: new B3Propagator({
+    injectEncoding: B3InjectEncoding.MULTI_HEADER
+  })
 });
 
 registerInstrumentations({
   instrumentations: [
-    new GrpcInstrumentation(),
-  ],
+    new GrpcInstrumentation()
+  ]
 });
-
-const exporter = new ZipkinExporter({
-  serviceName: 'paymentservice',
-  url: process.env.SIGNALFX_ENDPOINT_URL,
-});
-
-provider.addSpanProcessor(new BatchSpanProcessor(exporter));
-
-const CONSOLE_SPAN = process.env['CONSOLE_SPAN'];
-if (CONSOLE_SPAN === 'true') {
-  provider.addSpanProcessor(new BatchSpanProcessor(new ConsoleSpanExporter(), { bufferTimeout: 1000 }));
-}
