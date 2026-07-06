@@ -28,6 +28,8 @@ import (
 )
 
 func TestServer(t *testing.T) {
+	defer initTracing()()
+
 	ctx := context.Background()
 	addr := run("0")
 	conn, err := grpc.Dial(addr,

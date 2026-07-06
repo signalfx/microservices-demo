@@ -148,7 +148,7 @@ func main() {
 	handler = &logHandler{log: log, next: handler} // add logging
 	handler = ensureSessionID(handler)             // add session ID
 
-	log.Infof("starting server on " + addr + ":" + srvPort)
+	log.Infof("starting server on %s:%s", addr, srvPort)
 	log.Fatal(http.ListenAndServe(addr+":"+srvPort, handler))
 }
 

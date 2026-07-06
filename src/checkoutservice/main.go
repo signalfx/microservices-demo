@@ -166,6 +166,14 @@ func (cs *checkoutService) Check(ctx context.Context, req *healthpb.HealthCheckR
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
 
+func (cs *checkoutService) List(ctx context.Context, req *healthpb.HealthListRequest) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{
+		Statuses: map[string]*healthpb.HealthCheckResponse{
+			"": &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING},
+		},
+	}, nil
+}
+
 func (cs *checkoutService) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
@@ -233,7 +241,7 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 
 	prep, err := cs.prepareOrderItemsAndShippingQuoteFromCart(ctx, req.UserId, req.UserCurrency, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	total := pb.Money{CurrencyCode: req.UserCurrency,

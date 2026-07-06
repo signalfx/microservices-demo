@@ -114,6 +114,14 @@ func (s *server) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
 
+func (s *server) List(ctx context.Context, req *healthpb.HealthListRequest) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{
+		Statuses: map[string]*healthpb.HealthCheckResponse{
+			"": &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING},
+		},
+	}, nil
+}
+
 func (s *server) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }

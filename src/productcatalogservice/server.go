@@ -211,6 +211,14 @@ func (p *productCatalog) Check(ctx context.Context, req *healthpb.HealthCheckReq
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
 
+func (p *productCatalog) List(ctx context.Context, req *healthpb.HealthListRequest) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{
+		Statuses: map[string]*healthpb.HealthCheckResponse{
+			"": &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING},
+		},
+	}, nil
+}
+
 func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_WatchServer) error {
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
