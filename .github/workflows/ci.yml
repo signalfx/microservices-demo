@@ -12,15 +12,28 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
+
+    - name: Install deployment tools
+      env:
+        SKAFFOLD_VERSION: v2.23.0
+        KUBECTL_VERSION: v1.26.2
+      run: |
+        set -euo pipefail
+        curl -fsSLo skaffold "https://storage.googleapis.com/skaffold/releases/${SKAFFOLD_VERSION}/skaffold-linux-amd64"
+        echo "c44fb83ec88a9ed2945f3326a6d6b78bb957354535f0efcf653413bcd0e9510d  skaffold" | sha256sum --check --strict
+        curl -fsSLo kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+        echo "fcf86d21fb1a49b012bce7845cf00081d2dd7a59f424b28621799deceb5227b3  kubectl" | sha256sum --check --strict
+        sudo install skaffold kubectl /usr/local/bin/
+
+    - name: Generate gRPC TLS manifest
+      run: sh ./hack/generate-grpc-tls.sh
 
     - name: Create kind cluster
       uses: helm/kind-action@v1.8.0
 
     - name: Deploy From Source
-      uses: hiberbee/github-action-skaffold@1.27.0
-      with:
-        command: run
+      run: skaffold run --filename=skaffold.yaml --verbosity=warning
 
     - name: Wait For Pods
       timeout-minutes: 20
