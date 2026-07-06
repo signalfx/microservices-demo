@@ -17,40 +17,38 @@
 import os
 import random
 import time
-import traceback
 from concurrent import futures
 
 import grpc
 
 from opentelemetry import trace
-from opentelemetry import propagators
+from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.exporter import zipkin
-from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
-#from opentelemetry.sdk.trace.propagation.b3_format import B3Format
+from opentelemetry.exporter.zipkin.json import ZipkinExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.propagators.b3 import B3MultiFormat
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
-from opentelemetry.instrumentation.grpc.grpcext import intercept_server
-
-from fixed_propagator import FixedB3Format
 
 import demo_pb2
 import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
+from grpc_health.v1 import health
 
 from logger import getJSONLogger
 logger = getJSONLogger('recommendationservice-server')
 
-zipkin_exporter = zipkin.ZipkinSpanExporter(
-    service_name="recommendationservice",
-    url=os.environ['SIGNALFX_ENDPOINT_URL']
-)
-span_processor = BatchExportSpanProcessor(zipkin_exporter)
+zipkin_exporter = ZipkinExporter(endpoint=os.environ['SIGNALFX_ENDPOINT_URL'])
+span_processor = BatchSpanProcessor(zipkin_exporter)
 
-propagators.set_global_textmap(FixedB3Format())
-trace.set_tracer_provider(TracerProvider())
-trace.get_tracer_provider().add_span_processor(span_processor)
+set_global_textmap(B3MultiFormat())
+provider = TracerProvider(
+    resource=Resource.create({'service.name': 'recommendationservice'})
+)
+provider.add_span_processor(span_processor)
+trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
 instrumentor = GrpcInstrumentorClient()
@@ -60,10 +58,13 @@ grpc_server_instrumentor.instrument()
 
 
 class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
+    def __init__(self, product_catalog_stub):
+        self.product_catalog_stub = product_catalog_stub
+
     def ListRecommendations(self, request, context):
         max_responses = 5
         # fetch list of products from product catalog stub
-        cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
+        cat_response = self.product_catalog_stub.ListProducts(demo_pb2.Empty())
         product_ids = [x.id for x in cat_response.products]
         filtered_products = list(set(product_ids)-set(request.product_ids))
         num_products = len(filtered_products)
@@ -77,14 +78,6 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         response = demo_pb2.ListRecommendationsResponse()
         response.product_ids.extend(prod_list)
         return response
-
-    def Check(self, request, context):
-        return health_pb2.HealthCheckResponse(
-            status=health_pb2.HealthCheckResponse.SERVING)
-
-    def Watch(self, request, context, send_response_callback=None):
-        context.write(health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING))
-
 
 if __name__ == "__main__":
     logger.info("initializing recommendationservice")
@@ -103,9 +96,11 @@ if __name__ == "__main__":
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
     # add class to gRPC server
-    service = RecommendationService()
+    service = RecommendationService(product_catalog_stub)
+    health_service = health.HealthServicer()
+    health_service.set('', health_pb2.HealthCheckResponse.SERVING)
     demo_pb2_grpc.add_RecommendationServiceServicer_to_server(service, server)
-    health_pb2_grpc.add_HealthServicer_to_server(service, server)
+    health_pb2_grpc.add_HealthServicer_to_server(health_service, server)
 
     # start server
     logger.info("listening on port: " + port)
