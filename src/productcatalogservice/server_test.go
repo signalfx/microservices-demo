@@ -16,6 +16,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
@@ -24,6 +28,7 @@ import (
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -31,9 +36,10 @@ func TestServer(t *testing.T) {
 	defer initTracing()()
 
 	ctx := context.Background()
-	addr := run("0")
+	serverCredentials, clientCredentials := testTransportCredentials(t)
+	addr := run("0", serverCredentials)
 	conn, err := grpc.Dial(addr,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(clientCredentials),
 		grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
 	if err != nil {
 		t.Fatal(err)
@@ -67,4 +73,23 @@ func TestServer(t *testing.T) {
 	if diff := cmp.Diff(sres.Results, []*pb.Product{parseCatalog(ctx)[0]}, cmp.Comparer(proto.Equal)); diff != "" {
 		t.Error(diff)
 	}
+}
+
+func testTransportCredentials(t *testing.T) (credentials.TransportCredentials, credentials.TransportCredentials) {
+	t.Helper()
+	testServer := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	t.Cleanup(testServer.Close)
+
+	roots := x509.NewCertPool()
+	roots.AddCert(testServer.Certificate())
+	serverCredentials := credentials.NewTLS(&tls.Config{
+		Certificates: testServer.TLS.Certificates,
+		MinVersion:   tls.VersionTLS13,
+	})
+	clientCredentials := credentials.NewTLS(&tls.Config{
+		MinVersion: tls.VersionTLS13,
+		RootCAs:    roots,
+		ServerName: "example.com",
+	})
+	return serverCredentials, clientCredentials
 }

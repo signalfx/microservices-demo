@@ -35,10 +35,17 @@ spec:
           - containerPort: 5050
           readinessProbe:
             exec:
-              command: ["/bin/grpc_health_probe", "-addr=:5050"]
+              command: ["/bin/grpc_health_probe", "-addr=:5050", "-tls", "-tls-ca-cert=/var/run/grpc-tls-ca/ca.crt", "-tls-server-name=checkoutservice"]
           livenessProbe:
             exec:
-              command: ["/bin/grpc_health_probe", "-addr=:5050"]
+              command: ["/bin/grpc_health_probe", "-addr=:5050", "-tls", "-tls-ca-cert=/var/run/grpc-tls-ca/ca.crt", "-tls-server-name=checkoutservice"]
+          volumeMounts:
+          - name: grpc-server-tls
+            mountPath: /var/run/grpc-server-tls
+            readOnly: true
+          - name: grpc-tls-ca
+            mountPath: /var/run/grpc-tls-ca
+            readOnly: true
           env:
           - name: PORT
             value: "5050"
@@ -54,6 +61,12 @@ spec:
             value: "currencyservice:7000"
           - name: CART_SERVICE_ADDR
             value: "cartservice:7070"
+          - name: GRPC_TLS_CERT
+            value: "/var/run/grpc-server-tls/tls.crt"
+          - name: GRPC_TLS_KEY
+            value: "/var/run/grpc-server-tls/tls.key"
+          - name: GRPC_TLS_CA
+            value: "/var/run/grpc-tls-ca/ca.crt"
           - name: NODE_IP
             valueFrom:
               fieldRef:
@@ -72,6 +85,13 @@ spec:
             limits:
               cpu: 70m
               memory: 128Mi
+      volumes:
+      - name: grpc-server-tls
+        secret:
+          secretName: checkoutservice-grpc-tls
+      - name: grpc-tls-ca
+        configMap:
+          name: grpc-tls-ca
 ---
 apiVersion: v1
 kind: Service

@@ -68,6 +68,8 @@ spec:
             value: "checkoutservice:5050"
           - name: AD_SERVICE_ADDR
             value: "adservice:9555"
+          - name: GRPC_TLS_CA
+            value: "/var/run/grpc-tls-ca/ca.crt"
           - name: RUM_REALM
           - name: RUM_AUTH
           - name: RUM_APP_NAME
@@ -84,6 +86,10 @@ spec:
             value: "http://$(NODE_IP):9411/api/v2/spans"
           - name: SIGNALFX_SERVER_TIMING_CONTEXT
             value: "true"
+          volumeMounts:
+          - name: grpc-tls-ca
+            mountPath: /var/run/grpc-tls-ca
+            readOnly: true
           resources:
             requests:
               cpu: 70m
@@ -91,6 +97,10 @@ spec:
             limits:
               cpu: 70m
               memory: 128Mi
+      volumes:
+      - name: grpc-tls-ca
+        configMap:
+          name: grpc-tls-ca
 ---
 apiVersion: v1
 kind: Service

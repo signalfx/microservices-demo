@@ -16,3 +16,5 @@ node_modules
 
 # ignore auto-generated k8s manifests
 release/*.yaml
+kubernetes-manifests/grpc-tls.generated.yaml
+splunk-jira-vulns.json

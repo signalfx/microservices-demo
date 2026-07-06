@@ -47,6 +47,8 @@ spec:
           value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice:3550"
+        - name: GRPC_TLS_CA
+          value: "/var/run/grpc-tls-ca/ca.crt"
         - name: NODE_IP
           valueFrom:
             fieldRef:
@@ -54,6 +56,10 @@ spec:
         - name: SIGNALFX_ENDPOINT_URL
           value: "http://$(NODE_IP):9411/api/v2/spans"
           # value: "http://zipkin.default:9411/api/v2/spans"
+        volumeMounts:
+        - name: grpc-tls-ca
+          mountPath: /var/run/grpc-tls-ca
+          readOnly: true
         resources:
           requests:
             cpu: 70m
@@ -61,6 +67,10 @@ spec:
           limits:
             cpu: 70m
             memory: 256Mi
+      volumes:
+      - name: grpc-tls-ca
+        configMap:
+          name: grpc-tls-ca
 ---
 apiVersion: v1
 kind: Service

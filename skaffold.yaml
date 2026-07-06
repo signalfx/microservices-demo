@@ -47,6 +47,7 @@ deploy:
   statusCheckDeadlineSeconds: 1200
   kubectl:
     manifests:
+      - ./kubernetes-manifests/grpc-tls.generated.yaml
       - ./kubernetes-manifests/adservice.yaml
       - ./kubernetes-manifests/cartservice.yaml
       - ./kubernetes-manifests/checkoutservice.yaml

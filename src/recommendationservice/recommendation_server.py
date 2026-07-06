@@ -89,7 +89,14 @@ if __name__ == "__main__":
     if catalog_addr == "":
         raise Exception('PRODUCT_CATALOG_SERVICE_ADDR environment variable not set')
     logger.info("product catalog address: " + catalog_addr)
-    channel = grpc.insecure_channel(catalog_addr)
+    ca_path = os.environ.get('GRPC_TLS_CA', '')
+    if ca_path == "":
+        raise Exception('GRPC_TLS_CA environment variable not set')
+    with open(ca_path, 'rb') as ca_file:
+        channel_credentials = grpc.ssl_channel_credentials(
+            root_certificates=ca_file.read()
+        )
+    channel = grpc.secure_channel(catalog_addr, channel_credentials)
     product_catalog_stub = demo_pb2_grpc.ProductCatalogServiceStub(channel)
 
     # create gRPC server

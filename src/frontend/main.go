@@ -28,6 +28,8 @@ import (
 	"github.com/signalfx/signalfx-go-tracing/tracing"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -118,13 +120,13 @@ func main() {
 	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
 	mustMapEnv(&svc.adSvcAddr, "AD_SERVICE_ADDR")
 
-	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr)
-	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr)
-	mustConnGRPC(ctx, &svc.cartSvcConn, svc.cartSvcAddr)
-	mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr)
-	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr)
-	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr)
-	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
+	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr, false)
+	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr, true)
+	mustConnGRPC(ctx, &svc.cartSvcConn, svc.cartSvcAddr, false)
+	mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr, false)
+	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr, true)
+	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr, true)
+	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr, false)
 
 	r := muxtrace.NewRouter()
 	r.HandleFunc("/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
@@ -192,10 +194,19 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
+func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, useTLS bool) {
+	var transportCredentials credentials.TransportCredentials = insecure.NewCredentials()
+	if useTLS {
+		var err error
+		transportCredentials, err = loadClientCredentials(addr)
+		if err != nil {
+			panic(errors.Wrapf(err, "grpc: failed to configure TLS for %s", addr))
+		}
+	}
+
 	var err error
 	*conn, err = grpc.DialContext(ctx, addr,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(transportCredentials),
 		grpc.WithTimeout(time.Second*3),
 		grpc.WithStatsHandler(grpctrace.NewClientStatsHandler(grpctrace.WithServiceName("frontend"))))
 	if err != nil {

@@ -37,6 +37,10 @@ spec:
         env:
         - name: PORT
           value: "3550"
+        - name: GRPC_TLS_CERT
+          value: "/var/run/grpc-server-tls/tls.crt"
+        - name: GRPC_TLS_KEY
+          value: "/var/run/grpc-server-tls/tls.key"
         - name: NODE_IP
           valueFrom:
             fieldRef:
@@ -46,10 +50,17 @@ spec:
           # value: "http://zipkin.default:9411/api/v2/spans"
         readinessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:3550"]
+            command: ["/bin/grpc_health_probe", "-addr=:3550", "-tls", "-tls-ca-cert=/var/run/grpc-tls-ca/ca.crt", "-tls-server-name=productcatalogservice"]
         livenessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:3550"]
+            command: ["/bin/grpc_health_probe", "-addr=:3550", "-tls", "-tls-ca-cert=/var/run/grpc-tls-ca/ca.crt", "-tls-server-name=productcatalogservice"]
+        volumeMounts:
+        - name: grpc-server-tls
+          mountPath: /var/run/grpc-server-tls
+          readOnly: true
+        - name: grpc-tls-ca
+          mountPath: /var/run/grpc-tls-ca
+          readOnly: true
         resources:
           requests:
             cpu: 50m
@@ -57,6 +68,13 @@ spec:
           limits:
             cpu: 50m
             memory: 128Mi
+      volumes:
+      - name: grpc-server-tls
+        secret:
+          secretName: productcatalogservice-grpc-tls
+      - name: grpc-tls-ca
+        configMap:
+          name: grpc-tls-ca
 ---
 apiVersion: v1
 kind: Service

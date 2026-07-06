@@ -40,6 +40,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -122,11 +123,15 @@ func main() {
 		port = os.Getenv("PORT")
 	}
 	logger.Infof("starting grpc server at :%s", port)
-	run(port)
+	transportCredentials, err := loadServerCredentials()
+	if err != nil {
+		logger.Fatalf("configure gRPC TLS: %v", err)
+	}
+	run(port, transportCredentials)
 	select {}
 }
 
-func run(port string) string {
+func run(port string, transportCredentials credentials.TransportCredentials) string {
 	l, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		logger.Fatal(err)
@@ -134,7 +139,7 @@ func run(port string) string {
 
 	var srv *grpc.Server
 	statsHandler := grpctrace.NewServerStatsHandler(grpctrace.WithServiceName("productcatalogservice"))
-	srv = grpc.NewServer(grpc.StatsHandler(statsHandler))
+	srv = grpc.NewServer(grpc.Creds(transportCredentials), grpc.StatsHandler(statsHandler))
 
 	svc := &productCatalog{}
 

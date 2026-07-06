@@ -82,15 +82,19 @@ func main() {
 	if err != nil {
 		logger.Fatalf("failed to listen: %v", err)
 	}
+	transportCredentials, err := loadServerCredentials()
+	if err != nil {
+		logger.Fatalf("configure gRPC TLS: %v", err)
+	}
 
 	var srv *grpc.Server
 	if os.Getenv("DISABLE_STATS") == "" {
 		logger.Info("Stats enabled.")
 		statsHandler := grpctrace.NewServerStatsHandler(grpctrace.WithServiceName("shippingservice"))
-		srv = grpc.NewServer(grpc.StatsHandler(statsHandler))
+		srv = grpc.NewServer(grpc.Creds(transportCredentials), grpc.StatsHandler(statsHandler))
 	} else {
 		logger.Info("Stats disabled.")
-		srv = grpc.NewServer()
+		srv = grpc.NewServer(grpc.Creds(transportCredentials))
 	}
 	svc := &server{}
 	pb.RegisterShippingServiceServer(srv, svc)
