@@ -23,7 +23,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,7 +85,7 @@ public class AdServiceClient {
   }
 
   private static String getStringOrDefaultFromArgs(
-      String[] args, int index, @Nullable String defaultString) {
+      String[] args, int index, String defaultString) {
     String s = defaultString;
     if (index < args.length) {
       s = args[index];

@@ -1,34 +1,41 @@
-FROM adoptopenjdk/openjdk8:alpine-slim as base
+FROM eclipse-temurin:21-jdk-alpine-3.23 AS builder
 
-FROM base as builder
+RUN apk add --no-cache curl gcompat
 
 WORKDIR /app
 
-COPY ["build.gradle", "gradlew", "./"]
+COPY build.gradle settings.gradle gradle.lockfile gradlew ./
 COPY gradle gradle
-RUN chmod +x gradlew
-RUN ./gradlew downloadRepos
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && \
+    ./gradlew --no-daemon dependencies
 
-COPY . .
-RUN chmod +x gradlew
-RUN ./gradlew installDist
+COPY src src
+RUN ./gradlew --no-daemon check installDist
 
-RUN apk --update add curl
+ARG SPLUNK_OTEL_JAVA_VERSION=v2.29.0
+ARG SPLUNK_OTEL_JAVA_SHA256=54e4d1943ef9903889053184ffc09969e2a7b8c308b29812c855caa54f02aaf6
+RUN curl -fsSL "https://github.com/signalfx/splunk-otel-java/releases/download/${SPLUNK_OTEL_JAVA_VERSION}/splunk-otel-javaagent.jar" \
+        -o /tmp/splunk-otel-javaagent.jar && \
+    echo "${SPLUNK_OTEL_JAVA_SHA256}  /tmp/splunk-otel-javaagent.jar" | sha256sum -c -
 
-WORKDIR /tmp
-RUN curl -L https://github.com/signalfx/splunk-otel-java/releases/download/v1.17.0/splunk-otel-javaagent-all.jar -o splunk-otel-javaagent-all.jar
+ARG GRPC_HEALTH_PROBE_VERSION=v0.4.52
+ARG GRPC_HEALTH_PROBE_SHA256=48a2103bb33e3d051dff9b909e340f3f2ec9e07abc467e4ef5008e88f742ae4e
+RUN curl -fsSL "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64" \
+        -o /tmp/grpc_health_probe && \
+    echo "${GRPC_HEALTH_PROBE_SHA256}  /tmp/grpc_health_probe" | sha256sum -c - && \
+    chmod +x /tmp/grpc_health_probe
 
-FROM base
+FROM eclipse-temurin:21-jre-alpine-3.23
 
-RUN mkdir -p /opt/sfx
-COPY --from=builder /tmp/splunk-otel-javaagent-all.jar /opt/sfx/splunk-otel-javaagent-all.jar
+RUN addgroup -S app && adduser -S -G app app && \
+    mkdir -p /opt/sfx
 
-RUN GRPC_HEALTH_PROBE_VERSION=v0.3.1 && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
-    chmod +x /bin/grpc_health_probe
+COPY --from=builder /tmp/splunk-otel-javaagent.jar /opt/sfx/splunk-otel-javaagent.jar
+COPY --from=builder /tmp/grpc_health_probe /bin/grpc_health_probe
 
 WORKDIR /app
-COPY --from=builder /app .
+COPY --from=builder --chown=app:app /app/build/install/AdService/ ./
 
+USER app
 EXPOSE 9555
-ENTRYPOINT ["/app/build/install/hipstershop/bin/AdService"]
+ENTRYPOINT ["/app/bin/AdService"]
