@@ -15,7 +15,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -78,7 +77,6 @@ type frontendServer struct {
 }
 
 func main() {
-	ctx := context.Background()
 	log := logrus.New()
 	log.Level = logrus.DebugLevel
 	log.Formatter = &logrus.JSONFormatter{
@@ -120,13 +118,13 @@ func main() {
 	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
 	mustMapEnv(&svc.adSvcAddr, "AD_SERVICE_ADDR")
 
-	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr, false)
-	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr, true)
-	mustConnGRPC(ctx, &svc.cartSvcConn, svc.cartSvcAddr, false)
-	mustConnGRPC(ctx, &svc.recommendationSvcConn, svc.recommendationSvcAddr, false)
-	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr, true)
-	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr, true)
-	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr, false)
+	mustConnGRPC(&svc.currencySvcConn, svc.currencySvcAddr, false)
+	mustConnGRPC(&svc.productCatalogSvcConn, svc.productCatalogSvcAddr, true)
+	mustConnGRPC(&svc.cartSvcConn, svc.cartSvcAddr, false)
+	mustConnGRPC(&svc.recommendationSvcConn, svc.recommendationSvcAddr, false)
+	mustConnGRPC(&svc.shippingSvcConn, svc.shippingSvcAddr, true)
+	mustConnGRPC(&svc.checkoutSvcConn, svc.checkoutSvcAddr, true)
+	mustConnGRPC(&svc.adSvcConn, svc.adSvcAddr, false)
 
 	r := muxtrace.NewRouter()
 	r.HandleFunc("/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
@@ -194,7 +192,7 @@ func mustMapEnv(target *string, envKey string) {
 	*target = v
 }
 
-func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, useTLS bool) {
+func mustConnGRPC(conn **grpc.ClientConn, addr string, useTLS bool) {
 	var transportCredentials credentials.TransportCredentials = insecure.NewCredentials()
 	if useTLS {
 		var err error
@@ -205,9 +203,8 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string, useT
 	}
 
 	var err error
-	*conn, err = grpc.DialContext(ctx, addr,
+	*conn, err = grpc.NewClient(addr,
 		grpc.WithTransportCredentials(transportCredentials),
-		grpc.WithTimeout(time.Second*3),
 		grpc.WithStatsHandler(grpctrace.NewClientStatsHandler(grpctrace.WithServiceName("frontend"))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
