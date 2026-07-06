@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY build.gradle settings.gradle gradle.lockfile gradlew ./
 COPY gradle gradle
-RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && \
+RUN chmod +x gradlew && \
     ./gradlew --no-daemon dependencies
 
 COPY src src

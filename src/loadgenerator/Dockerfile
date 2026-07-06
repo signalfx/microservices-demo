@@ -17,7 +17,7 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 COPY --chown=app:app . .
-RUN sed -i 's/\r$//' ./loadgen.sh && chmod +x ./loadgen.sh
+RUN chmod +x ./loadgen.sh
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
