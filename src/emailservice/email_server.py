@@ -27,6 +27,7 @@ import demo_pb2
 import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
+from grpc_health.v1 import health
 
 from opentelemetry import trace
 from opentelemetry.propagate import set_global_textmap
@@ -61,36 +62,20 @@ env = Environment(
 )
 template = env.get_template('confirmation.html')
 
-class BaseEmailService(demo_pb2_grpc.EmailServiceServicer):
-  def Check(self, request, context):
-    return health_pb2.HealthCheckResponse(
-      status=health_pb2.HealthCheckResponse.SERVING)
-
-  def Watch(self, request, context, send_response_callback=None):
-      context.write(health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING))
-
-
-class DummyEmailService(BaseEmailService):
+class DummyEmailService(demo_pb2_grpc.EmailServiceServicer):
   def SendOrderConfirmation(self, request, context):
     logger.info('A request to send order confirmation email to {} has been received.'.format(request.email))
     return demo_pb2.Empty()
 
 
-class HealthCheck():
-  def Check(self, request, context):
-    return health_pb2.HealthCheckResponse(
-      status=health_pb2.HealthCheckResponse.SERVING)
-
-  def Watch(self, request, context, send_response_callback=None):
-      context.write(health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING))
-
 def start():
   server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-  service = None
   service = DummyEmailService()
+  health_service = health.HealthServicer()
+  health_service.set('', health_pb2.HealthCheckResponse.SERVING)
 
   demo_pb2_grpc.add_EmailServiceServicer_to_server(service, server)
-  health_pb2_grpc.add_HealthServicer_to_server(service, server)
+  health_pb2_grpc.add_HealthServicer_to_server(health_service, server)
 
   port = os.environ.get('PORT', "8080")
   logger.info("listening on port: "+port)
