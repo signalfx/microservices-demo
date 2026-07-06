@@ -17,7 +17,7 @@
 const path = require('path');
 const grpc = require('@grpc/grpc-js');
 const pino = require('pino');
-const { getSpan, context } = require("@opentelemetry/api");
+const { context, trace } = require('@opentelemetry/api');
 
 const protoLoader = require('@grpc/proto-loader');
 
@@ -32,15 +32,18 @@ const healthProto = _loadProto(HEALTH_PROTO_PATH).grpc.health.v1;
 const logger = pino({
   name: 'currencyservice-server',
   messageKey: 'message',
-  changeLevelName: 'severity',
-  useLevelLabels: true,
+  formatters: {
+    level (label) {
+      return { severity: label };
+    }
+  },
   timestamp: pino.stdTimeFunctions.unixTime,
-  mixin() {
-    const span = getSpan(context.active())
+  mixin () {
+    const span = trace.getSpan(context.active());
     if (!span) {
       return {};
     }
-    const { traceId, spanId } = span.context();
+    const { traceId, spanId } = span.spanContext();
     return {
       trace_id: traceId.slice(-16), // convert to 64-bit format
       span_id: spanId,
@@ -92,7 +95,7 @@ function _carry (amount) {
 function getSupportedCurrencies (call, callback) {
   logger.info('Getting supported currencies...');
   _getCurrencyData((data) => {
-    callback(null, {currency_codes: Object.keys(data)});
+    callback(null, { currency_codes: Object.keys(data) });
   });
 }
 
@@ -124,7 +127,7 @@ function convert (call, callback) {
       result.nanos = Math.floor(result.nanos);
       result.currency_code = request.to_code;
 
-      logger.info(`conversion request successful`);
+      logger.info('conversion request successful');
       callback(null, result);
     });
   } catch (err) {
@@ -147,10 +150,10 @@ function check (call, callback) {
 function main () {
   logger.info(`Starting gRPC server on port ${PORT}...`);
   const server = new grpc.Server();
-  server.addService(shopProto.CurrencyService.service, {getSupportedCurrencies, convert});
-  server.addService(healthProto.Health.service, {check});
+  server.addService(shopProto.CurrencyService.service, { getSupportedCurrencies, convert });
+  server.addService(healthProto.Health.service, { check });
   server.bindAsync(
-    `0.0.0.0:${PORT}`, 
+    `0.0.0.0:${PORT}`,
     grpc.ServerCredentials.createInsecure(),
     (err, port) => {
       if (err != null) {
@@ -162,4 +165,8 @@ function main () {
   );
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = { _carry, check, convert, getSupportedCurrencies, main };
