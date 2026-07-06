@@ -3,7 +3,7 @@ module github.com/signalfx/microservices-demo/src/productcatalogservice
 go 1.26
 
 require (
-	cloud.google.com/go/profiler v0.5.0
+	cloud.google.com/go/profiler v0.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.7.0
 	github.com/opentracing/opentracing-go v1.2.0
@@ -11,7 +11,7 @@ require (
 	github.com/signalfx/signalfx-go-tracing/contrib/google.golang.org/grpc v1.12.0
 	github.com/sirupsen/logrus v1.9.4
 	go.opencensus.io v0.24.0
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 )
 

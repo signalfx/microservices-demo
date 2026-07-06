@@ -3,7 +3,7 @@ module github.com/signalfx/microservices-demo/src/frontend
 go 1.26
 
 require (
-	cloud.google.com/go/profiler v0.5.0
+	cloud.google.com/go/profiler v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/opentracing/opentracing-go v1.2.0
@@ -12,7 +12,7 @@ require (
 	github.com/signalfx/signalfx-go-tracing/contrib/google.golang.org/grpc v1.12.0
 	github.com/signalfx/signalfx-go-tracing/contrib/gorilla/mux v1.12.0
 	github.com/sirupsen/logrus v1.9.4
-	google.golang.org/grpc v1.79.3
+	google.golang.org/grpc v1.82.0
 	google.golang.org/protobuf v1.36.11
 )
 
