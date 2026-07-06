@@ -30,7 +30,7 @@ jobs:
       run: sh ./hack/generate-grpc-tls.sh
 
     - name: Create kind cluster
-      uses: helm/kind-action@v1.8.0
+      uses: helm/kind-action@v1.14.0
 
     - name: Deploy From Source
       run: skaffold run --filename=skaffold.yaml --verbosity=warning
