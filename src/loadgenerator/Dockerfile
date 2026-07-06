@@ -1,14 +1,25 @@
-FROM python:3.9-alpine
+FROM python:3.13.14-alpine3.24 AS builder
 
-RUN apk --no-cache add g++ zeromq-dev libffi-dev file make gcc musl-dev bash curl
+RUN apk add --no-cache \
+        build-base \
+        libffi-dev \
+        zeromq-dev
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+FROM python:3.13.14-alpine3.24
+
+RUN apk add --no-cache bash curl && \
+    addgroup -S app && adduser -S -G app app
+
+COPY --from=builder /install /usr/local
 
 WORKDIR /app
-COPY . .
+COPY --chown=app:app . .
+RUN sed -i 's/\r$//' ./loadgen.sh && chmod +x ./loadgen.sh
 
-# To work around https://github.com/gevent/gevent/issues/1899
-RUN pip install gevent==21.1.2 --no-build-isolation
-
-RUN pip install -U -r requirements.txt
-
-RUN chmod +x ./loadgen.sh
-ENTRYPOINT ./loadgen.sh
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+USER app
+ENTRYPOINT ["./loadgen.sh"]
