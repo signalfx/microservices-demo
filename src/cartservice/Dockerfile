@@ -1,46 +1,48 @@
-ARG NET_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${NET_VERSION} as builder
+ARG NET_VERSION=10.0
 
-WORKDIR /app
+FROM mcr.microsoft.com/dotnet/sdk:${NET_VERSION} AS builder
+
+WORKDIR /source
+COPY cartservice.csproj packages.lock.json ./
+RUN dotnet restore cartservice.csproj --locked-mode
+
 COPY . .
-RUN dotnet restore && \
-    dotnet build && \
-    dotnet publish -c release -r linux-x64 --no-self-contained -o /cartservice
+RUN dotnet build cartservice.csproj -c Release --no-restore && \
+    dotnet publish cartservice.csproj -c Release --no-self-contained --no-restore -o /cartservice
 
-# cartservice
+FROM mcr.microsoft.com/dotnet/aspnet:${NET_VERSION} AS instrumentation
+
+ADD --checksum=sha256:0abfc82eb0408838636e9b1e0557aefc0a4c81ccc441b6b39807120f9800015b \
+    https://github.com/signalfx/splunk-otel-dotnet/releases/download/v1.14.0/splunk-opentelemetry-dotnet-linux-glibc-x64.zip \
+    /tmp/splunk-otel-dotnet.zip
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends unzip && \
+    mkdir -p /.splunk-otel-dotnet && \
+    unzip -q /tmp/splunk-otel-dotnet.zip -d /.splunk-otel-dotnet
+
 FROM mcr.microsoft.com/dotnet/aspnet:${NET_VERSION}
 
-# Update and fix critical issues on the distribution
-RUN apt-get update
-RUN apt-get -y dist-upgrade
+ADD --checksum=sha256:48a2103bb33e3d051dff9b909e340f3f2ec9e07abc467e4ef5008e88f742ae4e \
+    https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.52/grpc_health_probe-linux-amd64 \
+    /bin/grpc_health_probe
+RUN chmod +x /bin/grpc_health_probe && \
+    groupadd --system cart && \
+    useradd --system --gid cart --home-dir /app cart
 
-ARG GRPC_HEALTH_PROBE_VERSION=v0.4.22
-ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 /bin/grpc_health_probe
-RUN chmod +x /bin/grpc_health_probe
+COPY --from=instrumentation /.splunk-otel-dotnet /.splunk-otel-dotnet
 
 WORKDIR /app
-COPY --from=builder /cartservice .
-COPY --from=builder /app/start .
+COPY --from=builder --chown=cart:cart /cartservice ./
 
-# Add the Splunk Distribution of OpenTelemetry .NET
-RUN apt-get update && \
-    apt-get install -y \
-            curl \
-            unzip
+ENV CORECLR_ENABLE_PROFILING=1 \
+    CORECLR_PROFILER={918728DD-259F-4A6A-AC2B-B85E1B658318} \
+    CORECLR_PROFILER_PATH=/.splunk-otel-dotnet/linux-x64/OpenTelemetry.AutoInstrumentation.Native.so \
+    DOTNET_ADDITIONAL_DEPS=/.splunk-otel-dotnet/AdditionalDeps \
+    DOTNET_SHARED_STORE=/.splunk-otel-dotnet/store \
+    DOTNET_STARTUP_HOOKS=/.splunk-otel-dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll \
+    OTEL_DOTNET_AUTO_HOME=/.splunk-otel-dotnet \
+    OTEL_DOTNET_AUTO_PLUGINS="Splunk.OpenTelemetry.AutoInstrumentation.Plugin, Splunk.OpenTelemetry.AutoInstrumentation"
 
-ARG SPLUNK_OTEL_VERSION=1.14.0
-ENV OTEL_DOTNET_AUTO_HOME=/.splunk-otel-dotnet
-ADD https://github.com/signalfx/splunk-otel-dotnet/releases/download/v${SPLUNK_OTEL_VERSION}/splunk-otel-dotnet-install.sh ./
-RUN chmod +x ./splunk-otel-dotnet-install.sh && \
-    ./splunk-otel-dotnet-install.sh && \
-    rm ./splunk-otel-dotnet-install.sh
-
-ENV CORECLR_ENABLE_PROFILING=1
-ENV CORECLR_PROFILER={918728DD-259F-4A6A-AC2B-B85E1B658318}
-ENV CORECLR_PROFILER_PATH=/.splunk-otel-dotnet/linux-x64/OpenTelemetry.AutoInstrumentation.Native.so
-ENV DOTNET_ADDITIONAL_DEPS=/.splunk-otel-dotnet/AdditionalDeps
-ENV DOTNET_SHARED_STORE=/.splunk-otel-dotnet/store
-ENV DOTNET_STARTUP_HOOKS=/.splunk-otel-dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll
-ENV OTEL_DOTNET_AUTO_PLUGINS="Splunk.OpenTelemetry.AutoInstrumentation.Plugin, Splunk.OpenTelemetry.AutoInstrumentation"
-
+USER cart
+EXPOSE 7070
 ENTRYPOINT ["./cartservice", "start"]

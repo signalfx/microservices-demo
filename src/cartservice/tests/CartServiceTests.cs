@@ -23,8 +23,8 @@ namespace cartservice;
 
 public class E2ETests
 {
-    private static string serverHostName = "localhost";
-    private static int port = 7070;
+    private static readonly string ServerAddress =
+        Environment.GetEnvironmentVariable("CART_SERVICE_ADDR") ?? "localhost:7070";
 
     [Fact]
     public async Task GetItem_NoAddItemBefore_EmptyCartReturned()
@@ -32,7 +32,7 @@ public class E2ETests
         string userId = Guid.NewGuid().ToString();
 
         // Construct server's Uri
-        string targetUri = $"{serverHostName}:{port}";
+        string targetUri = ServerAddress;
 
         // Create a GRPC communication channel between the client and the server
         var channel = new Channel(targetUri, ChannelCredentials.Insecure);
@@ -57,7 +57,7 @@ public class E2ETests
         string userId = Guid.NewGuid().ToString();
 
         // Construct server's Uri
-        string targetUri = $"{serverHostName}:{port}";
+        string targetUri = ServerAddress;
 
         // Create a GRPC communication channel between the client and the server
         var channel = new Channel(targetUri, ChannelCredentials.Insecure);
@@ -99,7 +99,7 @@ public class E2ETests
         string userId = Guid.NewGuid().ToString();
 
         // Construct server's Uri
-        string targetUri = $"{serverHostName}:{port}";
+        string targetUri = ServerAddress;
 
         // Create a GRPC communication channel between the client and the server
         var channel = new Channel(targetUri, ChannelCredentials.Insecure);

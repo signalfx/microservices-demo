@@ -77,7 +77,7 @@ public class RedisCartStore : ICartStore
             }
             else
             {
-                cart = Hipstershop.Cart.Parser.ParseFrom(value);
+                cart = Hipstershop.Cart.Parser.ParseFrom((byte[])value);
                 var existingItem = cart.Items.SingleOrDefault(i => i.ProductId == productId);
                 if (existingItem == null)
                 {
@@ -143,7 +143,7 @@ public class RedisCartStore : ICartStore
                 // in the redis cache.
                 await ConditionallyMockExternalResourceAccess("Cart.DbQuery.GetCart");
 
-                return Hipstershop.Cart.Parser.ParseFrom(value);
+                return Hipstershop.Cart.Parser.ParseFrom((byte[])value);
             }
 
             // We decided to return empty cart in cases when user wasn't in the cache before
